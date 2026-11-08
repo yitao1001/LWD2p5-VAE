@@ -1,0 +1,110 @@
+{
+  "date": "2026-11-04",
+  "scope": "Engineering verification of LWD reference finetuning; not scientific effectiveness validation",
+  "environment": {
+    "python": "3.11.15",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "device": "CPU",
+    "packages": {
+      "torch": "2.6.0",
+      "torchvision": "0.21.0",
+      "lpips": "0.1.4",
+      "numpy": "2.4.6",
+      "einops": "0.8.2",
+      "safetensors": "0.8.0"
+    }
+  },
+  "tests": {
+    "command": "python -m unittest discover -s tests -v",
+    "passed": 49,
+    "new_finetuning_tests": 11,
+    "seconds": 8.054,
+    "log": "docs/validation/20261104_finetuning_tests.txt",
+    "note": "First restricted run passed 48/49; legacy evaluation subprocess was blocked by macOS OpenMP shared-memory access. Same complete suite passed in an environment permitting local shared memory."
+  },
+  "checks": [
+    "vendored source hashes and import-only changes",
+    "adapter equals original AutoencoderKL computational methods exactly in FP32",
+    "RGB average adaptation and reject partial weights before mutation",
+    "KL sum/mean factor 360 and independent feature/KL coefficients",
+    "CSEM feature loss agrees with explicit AlexNet activations",
+    "LPIPS agrees exactly with official slice construction and calibration",
+    "both frozen feature losses propagate gradients to predictions without weight downloads",
+    "synthetic-pretrained LPIPS+EMA+dropout continuation equals uninterrupted training exactly for VAE, optimizer, EMA, loss network and metrics",
+    "v2 checkpoint evaluation and differentiable raw-log10rho / Fortran-order inference",
+    "legacy tests remain passing",
+    "missing required inputs are reported before creating run output",
+    "configuration paths remain project-relative when launched elsewhere"
+  ],
+  "full_128_channel_core": {
+    "base_channels": 128,
+    "parameter_count": 83649253,
+    "input_shape": [
+      1,
+      1,
+      48,
+      120
+    ],
+    "latent_shape": [
+      1,
+      4,
+      6,
+      15
+    ],
+    "output_shape": [
+      1,
+      1,
+      48,
+      120
+    ],
+    "finite": true,
+    "initialization": "random; forward-shape validation only"
+  },
+  "smoke_training": {
+    "config": "configs/finetuning/smoke_original_core.json",
+    "run": "runs/finetuning_smoke_v1",
+    "train_samples_per_epoch": 8,
+    "val_samples": 4,
+    "epochs": 2,
+    "initialization": "random reduced model; no perceptual loss",
+    "summary": {
+      "completed_epochs": 2,
+      "best_epoch": 2,
+      "best_val_rmse_log10": 1.0551574041279528,
+      "stopped_early": false,
+      "best_checkpoint": "checkpoints/best.pt",
+      "last_checkpoint": "checkpoints/last.pt",
+      "test_splits_used": false,
+      "reference": {
+        "name": "smoke_original_core",
+        "basis": "CompVis core + LWD pipeline verification only",
+        "status": "Synthetic/random initialization; no scientific validation",
+        "assumptions": [
+          "Reduced 32-channel network; no pretrained or perceptual weights; two short CPU epochs."
+        ]
+      }
+    }
+  },
+  "smoke_evaluation": {
+    "output": "evaluations/finetuning_smoke_v1",
+    "evaluated_counts": {
+      "test": 18,
+      "ood_dip": 18,
+      "ood_contrast": 18
+    },
+    "metrics": "evaluations/finetuning_smoke_v1/metrics.json"
+  },
+  "not_validated": [
+    "Real user kl-f8 checkpoint compatibility or pretrained finetuning quality",
+    "Formal 26000-image LWD training",
+    "CUDA/MPS training and mixed precision",
+    "Hyy/Hzz reconstruction response errors or GN inversion effectiveness",
+    "Exact CSEM paper feature implementation/hyperparameters",
+    "Identity and published experiment version of the inverse-scattering paper"
+  ],
+  "input_status": {
+    "formal_dataset_exists": false,
+    "vae_weights_exist": false,
+    "alexnet_weights_exist": false
+  }
+}

@@ -1,0 +1,3 @@
+numpy>=1.24
+matplotlib>=3.7
+# Optional for LWDVAEDataset(as_torch=True): torch>=2.0

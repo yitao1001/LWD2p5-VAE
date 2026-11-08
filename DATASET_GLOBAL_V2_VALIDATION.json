@@ -1,0 +1,117 @@
+{
+  "validation_date": "2026-11-04",
+  "scope": "Global-coordinate dataset v2 generation and pipeline verification; not scientific or electromagnetic inversion validation.",
+  "environment": {
+    "python": "3.11.15",
+    "numpy": "2.4.6",
+    "torch": "2.6.0",
+    "device": "cpu"
+  },
+  "dataset": {
+    "path": "datasets/smoke_global_v2",
+    "schema_version": 2,
+    "generator_version": "2.0.0",
+    "generator_sha256": "6d9676118a724d2ebd7533a62a4edad2e6b194d715b2a0093436ec885681a90e",
+    "manifest_sha256": "19706347f5258e7257e2604a1128e30cd4d771ee172c1278c49d471938c29da0",
+    "coordinate_frame": "global_aligned_yz",
+    "counts": {
+      "train": 90,
+      "val": 18,
+      "test": 18,
+      "ood_contrast": 18
+    },
+    "total": 144,
+    "array_shape_per_sample": [
+      1,
+      48,
+      120
+    ],
+    "dtype": "float32",
+    "value": "log10(rho / (ohm m))",
+    "spacing_inches": {
+      "y": 1.0,
+      "z": 1.0
+    },
+    "grid_keys": [
+      "y_edges_ft",
+      "z_edges_ft"
+    ],
+    "all_samples_have_zero_overall_rotation": true,
+    "horizontal_family_samples_checked": 42,
+    "all_sample_hashes_verified": true,
+    "duplicate_samples": 0,
+    "preview": "datasets/smoke_global_v2/preview_train.png"
+  },
+  "tests": {
+    "passed": 55,
+    "log": "docs/validation/20261104_global_v2_tests.txt",
+    "coverage": [
+      "horizontal layers and axis-aligned blocks",
+      "explicit local geological structure retained",
+      "coordinate translation",
+      "sample replay and uniqueness",
+      "legacy data and checkpoint compatibility",
+      "coordinate frame mismatch rejection",
+      "new default evaluation splits",
+      "training and resume"
+    ]
+  },
+  "smoke_training": {
+    "path": "runs/finetuning_smoke_global_v2",
+    "completed_epochs": 2,
+    "best_val_rmse_log10": 1.1505796982312002,
+    "model": "Reduced 32-channel CompVis core, random initialization, no perceptual features",
+    "log": "docs/validation/20261104_global_v2_training.txt"
+  },
+  "independent_evaluation": {
+    "path": "evaluations/finetuning_smoke_global_v2",
+    "metrics": {
+      "test": {
+        "count": 18,
+        "rmse_log10": 0.8884534691843501,
+        "mean_sample_rmse_log10": 0.8740881286062483,
+        "mae_log10": 0.6974421811761072,
+        "edge_mae_log10_per_cell": 0.32993901540451154,
+        "out_of_bounds_fraction": 0.010619212962962962,
+        "mean_relative_rho_l2": 269.20396802516757,
+        "mean_finite_relative_rho_l2": 269.20396802516757,
+        "relative_rho_l2_finite_count": 18,
+        "relative_rho_l2_overflow_count": 0,
+        "rho_exponent_overflow_pixels": 0,
+        "rho_exponent_underflow_pixels": 0
+      },
+      "ood_contrast": {
+        "count": 18,
+        "rmse_log10": 1.194690974319681,
+        "mean_sample_rmse_log10": 1.178848344027716,
+        "mae_log10": 1.0350062020492758,
+        "edge_mae_log10_per_cell": 0.37634830749735626,
+        "out_of_bounds_fraction": 0.00952932098765432,
+        "mean_relative_rho_l2": 4.588098440792413,
+        "mean_finite_relative_rho_l2": 4.588098440792413,
+        "relative_rho_l2_finite_count": 18,
+        "relative_rho_l2_overflow_count": 0,
+        "rho_exponent_overflow_pixels": 0,
+        "rho_exponent_underflow_pixels": 0
+      }
+    },
+    "log": "docs/validation/20261104_global_v2_evaluation.txt"
+  },
+  "formal_dataset": {
+    "default_path": "datasets/lwd_global_v2",
+    "planned_counts": {
+      "train": 20000,
+      "val": 2000,
+      "test": 2000,
+      "ood_contrast": 1000
+    },
+    "generated": false
+  },
+  "legacy_generator_archive": "references/dataset_v1",
+  "limitations": [
+    "Full pretrained VAE fine-tuning was not performed.",
+    "Electromagnetic forward/inversion accuracy was not tested.",
+    "Horizontal background bedding is an explicit prior choice; global coordinates alone do not require horizontal geology.",
+    "Tool inclination and angle-dependent spatial coverage remain forward/inversion responsibilities."
+  ]
+}

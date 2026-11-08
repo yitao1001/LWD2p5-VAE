@@ -1,0 +1,125 @@
+test_asymmetric_fortran_order (test_adapter.AdapterTests.test_asymmetric_fortran_order) ... ok
+test_domain_and_edge_policy (test_adapter.AdapterTests.test_domain_and_edge_policy) ... ok
+test_global_normalization_roundtrip (test_adapter.AdapterTests.test_global_normalization_roundtrip) ... ok
+test_loader_memmap_metadata_and_worker_reopening (test_adapter.AdapterTests.test_loader_memmap_metadata_and_worker_reopening) ... ok
+test_malformed_arrays_and_metadata (test_adapter.AdapterTests.test_malformed_arrays_and_metadata) ... ok
+test_physical_bilinear_on_nonuniform_grid (test_adapter.AdapterTests.test_physical_bilinear_on_nonuniform_grid) ... ok
+test_both_frozen_feature_losses_keep_input_gradient_without_download (test_finetuning.FinetuningTests.test_both_frozen_feature_losses_keep_input_gradient_without_download) ... /Users/yitao/Documents/2026LWD_Aramco/VAE_LWD2p5Inversion/.venv/lib/python3.11/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/Users/yitao/Documents/2026LWD_Aramco/VAE_LWD2p5Inversion/.venv/lib/python3.11/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=None`.
+  warnings.warn(msg)
+ok
+test_csem_feature_l2_matches_explicit_imagenet_activations (test_finetuning.FinetuningTests.test_csem_feature_l2_matches_explicit_imagenet_activations) ... ok
+test_csem_training_checkpoint_evaluation_and_latent_gradient (test_finetuning.FinetuningTests.test_csem_training_checkpoint_evaluation_and_latent_gradient) ... making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+epoch 1/1 loss=0.45918 val_RMSE(log10rho)=1.29349 best=1.29349
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+test: N=2, RMSE(log10rho)=1.01142, MAE=0.841843, outside=1.58%
+ood_contrast: N=2, RMSE(log10rho)=1.24158, MAE=1.0506, outside=2.76%
+Evaluation saved to /private/var/folders/49/m5cp8vq118sdd460n31t28jm0000gn/T/lwd_reference_tests_cldh_wrg/evaluation
+ok
+test_default_requires_pretraining_and_paths_do_not_depend_on_cwd (test_finetuning.FinetuningTests.test_default_requires_pretraining_and_paths_do_not_depend_on_cwd) ... ok
+test_kl_reduction_and_feature_schedule (test_finetuning.FinetuningTests.test_kl_reduction_and_feature_schedule) ... ok
+test_lpips_agrees_with_official_trunk_and_calibration (test_finetuning.FinetuningTests.test_lpips_agrees_with_official_trunk_and_calibration) ... ok
+test_missing_or_partial_weights_fail_before_output_creation (test_finetuning.FinetuningTests.test_missing_or_partial_weights_fail_before_output_creation) ... ok
+test_pretrained_training_resume_with_ema_and_features_is_exact (test_finetuning.FinetuningTests.test_pretrained_training_resume_with_ema_and_features_is_exact) ... making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+epoch 1/1 loss=0.597227 val_RMSE(log10rho)=1.01152 best=1.01152
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+epoch 1/2 loss=0.597227 val_RMSE(log10rho)=1.01152 best=1.01152
+epoch 2/2 loss=0.589419 val_RMSE(log10rho)=1.00918 best=1.00918
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+epoch 2/2 loss=0.589419 val_RMSE(log10rho)=1.00918 best=1.00918
+ok
+test_rgb_average_and_reject_partial_weights_without_mutation (test_finetuning.FinetuningTests.test_rgb_average_and_reject_partial_weights_without_mutation) ... ok
+test_vendor_source_is_unmodified_except_import_prefix (test_finetuning.FinetuningTests.test_vendor_source_is_unmodified_except_import_prefix) ... ok
+test_wrapper_matches_original_autoencoder_methods (test_finetuning.FinetuningTests.test_wrapper_matches_original_autoencoder_methods) ... ok
+test_default_evaluation_splits_follow_dataset_version (test_generation.GenerationTests.test_default_evaluation_splits_follow_dataset_version) ... ok
+test_duplicate_json_keys (test_generation.GenerationTests.test_duplicate_json_keys) ... ok
+test_end_to_end_split_contract_and_exact_replay (test_generation.GenerationTests.test_end_to_end_split_contract_and_exact_replay) ... making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+Completed train: 90 models; 0 rejected draws
+Completed val: 18 models; 1 rejected draws
+Completed test: 18 models; 1 rejected draws
+Completed ood_contrast: 18 models; 1 rejected draws
+ok
+test_failed_generation_does_not_publish_partial_dataset (test_generation.GenerationTests.test_failed_generation_does_not_publish_partial_dataset) ... ok
+test_family_physics_and_replay (test_generation.GenerationTests.test_family_physics_and_replay) ... ok
+test_global_background_has_no_overall_tilt (test_generation.GenerationTests.test_global_background_has_no_overall_tilt) ... ok
+test_invalid_config_fails_early (test_generation.GenerationTests.test_invalid_config_fails_early) ... ok
+test_loader_rejects_tool_frame_mislabeled_as_global (test_generation.GenerationTests.test_loader_rejects_tool_frame_mislabeled_as_global) ... Completed train: 1 models; 0 rejected draws
+ok
+test_local_window_translation_keeps_global_axes_and_cell_size (test_generation.GenerationTests.test_local_window_translation_keeps_global_axes_and_cell_size) ... ok
+test_old_rotation_config_is_rejected_with_migration_hint (test_generation.GenerationTests.test_old_rotation_config_is_rejected_with_migration_hint) ... ok
+test_removed_block_family_cannot_be_requested_or_reenabled (test_generation.GenerationTests.test_removed_block_family_cannot_be_requested_or_reenabled) ... ok
+test_decoder_out_of_bounds_not_clipped (test_metrics.MetricsTests.test_decoder_out_of_bounds_not_clipped) ... ok
+test_edge_metric_pools_axes_by_edge_count (test_metrics.MetricsTests.test_edge_metric_pools_axes_by_edge_count) ... ok
+test_group_and_overall_aggregate_samples_not_batches (test_metrics.MetricsTests.test_group_and_overall_aggregate_samples_not_batches) ... ok
+test_identity (test_metrics.MetricsTests.test_identity) ... ok
+test_known_constant_offset_and_zero_edges (test_metrics.MetricsTests.test_known_constant_offset_and_zero_edges) ... ok
+test_negative_large_prediction_does_not_overflow (test_metrics.MetricsTests.test_negative_large_prediction_does_not_overflow) ... ok
+test_nonfinite_and_shape_errors (test_metrics.MetricsTests.test_nonfinite_and_shape_errors) ... ok
+test_resistivity_overflow_is_explicit_and_json_safe (test_metrics.MetricsTests.test_resistivity_overflow_is_explicit_and_json_safe) ... ok
+test_compvis_parameter_names (test_model.ModelTests.test_compvis_parameter_names) ... ok
+test_eval_posterior_mean_is_deterministic (test_model.ModelTests.test_eval_posterior_mean_is_deterministic) ... ok
+test_gaussian_kl_is_analytic_sum (test_model.ModelTests.test_gaussian_kl_is_analytic_sum) ... ok
+test_half_posterior_statistics_do_not_overflow (test_model.ModelTests.test_half_posterior_statistics_do_not_overflow) ... ok
+test_input_and_architecture_validation (test_model.ModelTests.test_input_and_architecture_validation) ... ok
+test_rectangular_forward_backward_and_inverse_gradient (test_model.ModelTests.test_rectangular_forward_backward_and_inverse_gradient) ... ok
+test_reject_partial_or_wrong_architecture_without_mutation (test_model.ModelTests.test_reject_partial_or_wrong_architecture_without_mutation) ... ok
+test_rgb_checkpoint_adaptation_and_complete_load (test_model.ModelTests.test_rgb_checkpoint_adaptation_and_complete_load) ... ok
+epoch 1/1 loss=0.342354 val_RMSE(log10rho)=1.23486 best=1.23486
+test_evaluation_cli_smoke (test_training.TrainingTests.test_evaluation_cli_smoke) ... ok
+test_evaluation_is_repeatable_and_writes_real_metrics (test_training.TrainingTests.test_evaluation_is_repeatable_and_writes_real_metrics) ... test: N=2, RMSE(log10rho)=0.905609, MAE=0.768383, outside=0.25%
+Evaluation saved to /private/var/folders/49/m5cp8vq118sdd460n31t28jm0000gn/T/lwd_vae_training_tests_78vdxwsx/evaluate_a
+test: N=2, RMSE(log10rho)=0.905609, MAE=0.768383, outside=0.25%
+Evaluation saved to /private/var/folders/49/m5cp8vq118sdd460n31t28jm0000gn/T/lwd_vae_training_tests_78vdxwsx/evaluate_b
+ok
+test_existing_outputs_are_never_overwritten (test_training.TrainingTests.test_existing_outputs_are_never_overwritten) ... ok
+test_grid_mismatch_rejected_before_train_or_evaluation_output (test_training.TrainingTests.test_grid_mismatch_rejected_before_train_or_evaluation_output) ... ok
+test_invalid_config_and_nonfinite_inputs_are_rejected (test_training.TrainingTests.test_invalid_config_and_nonfinite_inputs_are_rejected) ... ok
+test_inversion_wrapper_preserves_raw_scale_order_and_latent_gradient (test_training.TrainingTests.test_inversion_wrapper_preserves_raw_scale_order_and_latent_gradient) ... ok
+test_legacy_frame_field_defaults_without_ignoring_data_identity (test_training.TrainingTests.test_legacy_frame_field_defaults_without_ignoring_data_identity) ... ok
+test_nonfinite_training_loss_never_becomes_a_checkpoint (test_training.TrainingTests.test_nonfinite_training_loss_never_becomes_a_checkpoint) ... ok
+test_reconstruction_loss_has_finite_gradients_and_mean_kl (test_training.TrainingTests.test_reconstruction_loss_has_finite_gradients_and_mean_kl) ... ok
+test_resume_matches_uninterrupted_model_and_optimizer_exactly (test_training.TrainingTests.test_resume_matches_uninterrupted_model_and_optimizer_exactly) ... epoch 2/2 loss=0.297872 val_RMSE(log10rho)=1.16066 best=1.16066
+epoch 1/2 loss=0.342354 val_RMSE(log10rho)=1.23486 best=1.23486
+epoch 2/2 loss=0.297872 val_RMSE(log10rho)=1.16066 best=1.16066
+ok
+test_resume_rejects_manifest_or_training_data_change (test_training.TrainingTests.test_resume_rejects_manifest_or_training_data_change) ... ok
+test_warmup_and_training_checkpoint_contents (test_training.TrainingTests.test_warmup_and_training_checkpoint_contents) ... ok
+
+----------------------------------------------------------------------
+Ran 56 tests in 8.794s
+
+OK

@@ -1,0 +1,6 @@
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+test: N=18, RMSE(log10rho)=0.888453, MAE=0.697442, outside=1.06%
+ood_contrast: N=18, RMSE(log10rho)=1.19469, MAE=1.03501, outside=0.95%
+Evaluation saved to /Users/yitao/Documents/2026LWD_Aramco/VAE_LWD2p5Inversion/evaluations/finetuning_smoke_global_v2

@@ -1,0 +1,8 @@
+Matplotlib is building the font cache; this may take a moment.
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+test: N=18, RMSE(log10rho)=0.986475, MAE=0.810808, outside=0.85%
+ood_dip: N=18, RMSE(log10rho)=0.947557, MAE=0.773684, outside=0.94%
+ood_contrast: N=18, RMSE(log10rho)=1.19044, MAE=1.02454, outside=1.00%
+Evaluation saved to /Users/yitao/Documents/2026LWD_Aramco/VAE_LWD2p5Inversion/evaluations/finetuning_smoke_v1

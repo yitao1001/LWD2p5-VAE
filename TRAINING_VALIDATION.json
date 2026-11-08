@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-15",
+  "python": "3.11.15 (main, Jun 11 2026, 15:14:57) [Clang 20.1.8 ]",
+  "torch": "2.14.1",
+  "device": "cpu",
+  "environment": "isolated /tmp/lwd_vae_test_env; existing lwd_np unchanged",
+  "unittest_cases_passed": 38,
+  "exact_cpu_resume_with_dropout": true,
+  "default_model": {
+    "parameters": 5251333,
+    "forward_backward_finite": true,
+    "input": [
+      2,
+      1,
+      48,
+      120
+    ],
+    "latent": [
+      2,
+      4,
+      6,
+      15
+    ]
+  },
+  "kl_f8_model": {
+    "parameters": 83649253,
+    "forward_finite": true,
+    "input": [
+      1,
+      1,
+      48,
+      120
+    ],
+    "latent": [
+      1,
+      4,
+      6,
+      15
+    ]
+  },
+  "smoke_train": {
+    "completed_epochs": 2,
+    "best_epoch": 2,
+    "best_val_rmse_log10": 1.0964122213662306,
+    "stopped_early": false,
+    "best_checkpoint": "best.pt",
+    "last_checkpoint": "last.pt",
+    "test_splits_used": false
+  },
+  "smoke_training_examples": 8,
+  "smoke_validation_examples": 4,
+  "smoke_test_counts": {
+    "test": 18,
+    "ood_dip": 18,
+    "ood_contrast": 18
+  },
+  "smoke_artifacts_for_pipeline_verification_only": true,
+  "trained_to_convergence": false,
+  "reconstruction_gallery_visually_reviewed": true,
+  "external_pretrained_checkpoint_tested": false,
+  "cuda_mps_execution_tested": false,
+  "em_forward_tested": false,
+  "source_sha256": {
+    "train_vae.py": "20a97aaabedabdca791f6db675a7fdb054f34415502a7cc3f2f223c3da2225b3",
+    "test_vae.py": "0ddd99a334104866feadde0db345d22cdac2c6d0852cd4f9e21b88bdd6ab3f61",
+    "lwd_vae/model.py": "63ae691c17fa89dafc44ddc46ebc4c3529d137cfdcf7afb3c28eb506ddb9fef2",
+    "lwd_vae/training.py": "9743a35253a13166c3c1806d158c424011f476a7c4b1b508352fdc9845d44ebc",
+    "lwd_vae/runtime.py": "9f45bd13c45ef6881a3442d252a1e0b356a97133c0c35fc3cc91402860648568",
+    "lwd_vae/evaluation.py": "1ebb0c9817e5ad141ace2e4acf1d20f0b4db3c01053290146f5fdd48f0442e4c",
+    "lwd_vae/inference.py": "0a076ce7e1dbb9c408d88a3f4fd75bd21040546b0836062a8eff779d3b8b8d22",
+    "configs/train_default.json": "07a0c4728578b5d62f285ed4fa003545147245f2446f9f74e4e8e10f5b35e93d",
+    "configs/train_kl_f8.json": "25a3fef97d7c8c7ba0734a1f66e8b9e8750cfc4d81babbd1dc3dcd9a78d0cc33",
+    "configs/train_smoke.json": "e376fbc349b67199f31f6fd9d76e9c0a0ecfe1244f2f8ad7b078e79f8a74472b",
+    "tests/test_training.py": "96df6c03764a19c4f48642c173ece56edeb8be4b5b3b657e8a9fdaacf831c02c",
+    "tests/test_model.py": "cc0608c179d521cc991816fccb5d1c9f4f141c73dc32582cc7f213f2280ebc3e",
+    "tests/test_metrics.py": "f7b3cc462dd39593c32e9926291732dc247b1cea7e0b9b899c5a583a1a637f63"
+  }
+}

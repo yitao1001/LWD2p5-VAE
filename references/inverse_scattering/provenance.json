@@ -1,0 +1,12 @@
+[
+  {
+    "file": "sdvae_model_finetune.py",
+    "sha256": "249c1a1b638bb84b151073454a46783dd1a4d3134af850e349a49ccff60c6528",
+    "matches_user_attachment": true
+  },
+  {
+    "file": "kl_f8.yaml",
+    "sha256": "afda8d6beda18040af8874a7ec0ed64f511612397418489c2cd23ce1426d13c0",
+    "matches_user_attachment": true
+  }
+]

@@ -1,0 +1,80 @@
+{
+  "schema_version": 2,
+  "reference": {
+    "name": "csem_reference",
+    "basis": "Zhou et al., TGRS 2026, DOI:10.1109/TGRS.2026.3661733, equations (12)-(13)",
+    "status": "LWD adaptation; not an exact reproduction of unpublished training details",
+    "assumptions": [
+      "Original CompVis KL-f8 core, pretrained initialization, RGB-channel mean follow the reference method.",
+      "AlexNet ImageNet normalization, ReLU layers [1,4,7,9,11], and equal layer-MSE averaging are explicit design choices.",
+      "Pixel L2 is implemented as elementwise MSE; paper norm notation does not fix the code reduction. Loss coefficients are tied to these reductions.",
+      "feature_weight=1 and kl_weight=1e-5 are starting values, not recovered CSEM paper hyperparameters.",
+      "SGD lr=2e-4, momentum=0.9, weight_decay=5e-4 and 10 epochs borrow from the uploaded inverse-scattering launch setup.",
+      "EMA is disabled here because its use in the CSEM final experiment is unconfirmed.",
+      "48x120 input, batch4, float32 and validation-log10rho model selection are LWD implementation choices.",
+      "Dataset v2.2 uses a globally aligned y-z frame and a horizontal reference sequence with local anticlines and inclined fault offsets; isolated block/lens bodies are excluded. Tool inclination belongs to the forward model."
+    ]
+  },
+  "paths": {
+    "dataset": "datasets/lwd_global_v2_2",
+    "output": "runs/finetuning_csem_global_v2_2",
+    "vae_weights": "weights/vae/kl_f8.ckpt",
+    "alexnet_weights": "weights/perceptual/alexnet_imagenet.pth"
+  },
+  "model": {
+    "base_channels": 128,
+    "channel_mult": [
+      1,
+      2,
+      4,
+      4
+    ],
+    "num_res_blocks": 2,
+    "latent_channels": 4,
+    "dropout": 0.0
+  },
+  "initialization": {
+    "mode": "pretrained",
+    "rgb_to_gray": "mean"
+  },
+  "loss": {
+    "pixel": "mse",
+    "feature": "alexnet_l2",
+    "feature_weight": 1.0,
+    "feature_layers": [
+      1,
+      4,
+      7,
+      9,
+      11
+    ],
+    "kl_weight": 1e-05,
+    "kl_reduction": "sum_per_sample",
+    "kl_warmup_epochs": 0,
+    "feature_decay_after_epoch": null,
+    "feature_decay_factor": 1.0
+  },
+  "optimizer": {
+    "name": "sgd",
+    "learning_rate": 0.0002,
+    "momentum": 0.9,
+    "weight_decay": 0.0005
+  },
+  "training": {
+    "seed": 20261104,
+    "epochs": 10,
+    "batch_size": 4,
+    "workers": 0,
+    "cpu_threads": 4,
+    "precision": "float32",
+    "grad_clip_norm": null,
+    "patience": 0,
+    "min_delta": 0.0,
+    "max_train_samples": null,
+    "max_val_samples": null
+  },
+  "ema": {
+    "decay": 0.0,
+    "policy": "epoch_copyback"
+  }
+}

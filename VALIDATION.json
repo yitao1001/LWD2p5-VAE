@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-15",
+  "python_environment": "/opt/miniconda3/envs/lwd_np/bin/python",
+  "numpy_version": "2.4.6",
+  "unittest_cases_passed": 11,
+  "smoke_models": 162,
+  "additional_generation_check_models": 2800,
+  "preview_visually_reviewed": true,
+  "pytorch_ldm_training_tested": false,
+  "em_forward_tested": false,
+  "source_hashes": {
+    "generate_dataset.py": "58821a86c804783eda3f71acd7f311240438c7b0612180d7aa3731655025f926",
+    "preview_dataset.py": "c8837a16875b1d5bce4616690d3ec698eb300be31c2af247f713383d889b8f87",
+    "tests/test_adapter.py": "e489afb33adbcc7568764e2906036a506143824a33afbd975aa1b212e4bf4d78",
+    "tests/test_generation.py": "da34236cd19d74fad5b43cd208e61824cc65af88e4eeec7412ae9376faf89ff8",
+    "lwd_vae/preview.py": "40a4471b57bb8c99b643a88d71af4d174d7dd7d47ddd9fb7edf8bb9838d9c3ed",
+    "lwd_vae/generation.py": "5326bbf2c7ac5b92c6ca23ebf06a477462b66988bb37acc00fd4c04e105e711f",
+    "lwd_vae/__init__.py": "d6f68afe583fe4a8f7f09ed9536ebdfb1e4add9861066fdb12299336393af5da",
+    "lwd_vae/dataset.py": "136fb9c89d0a5a607d52f7f48bdf438be8922a7cf13e2861540a5960d89502ae",
+    "lwd_vae/mapping.py": "d4099e68576e86e0c05a18ac1f058f123524628383971472a9a4f066c2626db6"
+  },
+  "preserved_original_hashes": {
+    "sdvae_model_finetune.py": "249c1a1b638bb84b151073454a46783dd1a4d3134af850e349a49ccff60c6528",
+    "kl_f8.yaml": "afda8d6beda18040af8874a7ec0ed64f511612397418489c2cd23ce1426d13c0"
+  }
+}

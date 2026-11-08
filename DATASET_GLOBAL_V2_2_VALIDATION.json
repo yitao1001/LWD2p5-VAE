@@ -1,0 +1,134 @@
+{
+  "date": "2026-11-06",
+  "generator_version": "2.2.0",
+  "schema_version": 2,
+  "change": {
+    "removed_families": [
+      "block",
+      "lens"
+    ],
+    "added_families": [
+      "anticline",
+      "faulted_anticline"
+    ],
+    "family_count": 9
+  },
+  "family_weights": {
+    "homogeneous": 0.05,
+    "layered": 0.25,
+    "curved": 0.1,
+    "anticline": 0.15,
+    "faulted": 0.15,
+    "faulted_anticline": 0.1,
+    "pinchout": 0.1,
+    "unconformity": 0.05,
+    "fluid_contact": 0.05
+  },
+  "grid": {
+    "ny": 120,
+    "nz": 48,
+    "y_bounds_ft": [
+      -5.0,
+      5.0
+    ],
+    "z_bounds_ft": [
+      -2.0,
+      2.0
+    ]
+  },
+  "dataset": {
+    "path": "datasets/smoke_global_v2_2",
+    "total_count": 144,
+    "splits": {
+      "train": {
+        "count": 90,
+        "family_counts": {
+          "anticline": 14,
+          "faulted": 13,
+          "faulted_anticline": 9,
+          "curved": 9,
+          "layered": 23,
+          "homogeneous": 5,
+          "pinchout": 9,
+          "unconformity": 4,
+          "fluid_contact": 4
+        },
+        "no_block": true,
+        "no_lens": true,
+        "all_samples_valid": true
+      },
+      "val": {
+        "count": 18,
+        "family_counts": {
+          "layered": 4,
+          "anticline": 3,
+          "faulted_anticline": 2,
+          "homogeneous": 1,
+          "fluid_contact": 1,
+          "faulted": 2,
+          "pinchout": 2,
+          "unconformity": 1,
+          "curved": 2
+        },
+        "no_block": true,
+        "no_lens": true,
+        "all_samples_valid": true
+      },
+      "test": {
+        "count": 18,
+        "family_counts": {
+          "anticline": 3,
+          "layered": 4,
+          "pinchout": 2,
+          "faulted": 2,
+          "unconformity": 1,
+          "faulted_anticline": 2,
+          "curved": 2,
+          "homogeneous": 1,
+          "fluid_contact": 1
+        },
+        "no_block": true,
+        "no_lens": true,
+        "all_samples_valid": true
+      },
+      "ood_contrast": {
+        "count": 18,
+        "family_counts": {
+          "faulted_anticline": 2,
+          "layered": 4,
+          "fluid_contact": 1,
+          "anticline": 3,
+          "faulted": 3,
+          "pinchout": 2,
+          "curved": 2,
+          "unconformity": 1
+        },
+        "no_block": true,
+        "no_lens": true,
+        "all_samples_valid": true
+      }
+    },
+    "preview": "datasets/smoke_global_v2_2/preview_train.png",
+    "fold_preview": "datasets/smoke_global_v2_2/preview_fold_variants.png",
+    "fold_preview_selection": "datasets/smoke_global_v2_2/preview_fold_variants_selection.json",
+    "manifest_sha256": "c95f38652323d23e7c2b76aba80f0b5487913dcd6bb335d05ee554a9b333d267",
+    "generator_matches_manifest": true
+  },
+  "tests": {
+    "command": ".venv/bin/python -m unittest discover -s tests -v",
+    "count": 58,
+    "status": "passed",
+    "log": "docs/validation/20261106_anticline_tests.txt"
+  },
+  "historical_data": {
+    "path": "datasets/smoke_global_v2_1",
+    "source_snapshot": "references/dataset_global_v2_1",
+    "snapshot_matches_old_manifest": true
+  },
+  "formal_dataset": {
+    "default_path": "datasets/lwd_global_v2_2",
+    "generated": false,
+    "configured_sample_count": 25000
+  },
+  "scope": "Code, data contracts, short training/evaluation tests using synthetic weights; not scientific validation of a trained LWD prior."
+}

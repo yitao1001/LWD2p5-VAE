@@ -1,0 +1,89 @@
+{
+  "schema_version": 2,
+  "coordinate_frame": "global_aligned_yz",
+  "seed": 20261104,
+  "grid": {
+    "ny": 120,
+    "nz": 48,
+    "y_bounds_ft": [
+      -5.0,
+      5.0
+    ],
+    "z_bounds_ft": [
+      -2.0,
+      2.0
+    ]
+  },
+  "resistivity": {
+    "log10_bounds": [
+      -1.0,
+      3.0
+    ],
+    "sampling_log10_bounds": [
+      -0.3010299956639812,
+      2.3010299956639813
+    ],
+    "weak_contrast_probability": 0.35,
+    "weak_delta_log10": [
+      0.05,
+      0.25
+    ],
+    "strong_delta_log10": [
+      0.3,
+      1.5
+    ]
+  },
+  "geometry": {
+    "background_bedding": "horizontal",
+    "boundary_count": [
+      1,
+      4
+    ],
+    "bed_thickness_ft": [
+      0.25,
+      1.5
+    ],
+    "curve_amplitude_ft": [
+      0.08,
+      0.45
+    ],
+    "curve_wavelength_ft": [
+      5.0,
+      20.0
+    ],
+    "fault_throw_ft": [
+      0.25,
+      1.0
+    ],
+    "fault_tilt_from_vertical_deg": [
+      -20.0,
+      20.0
+    ]
+  },
+  "family_weights": {
+    "homogeneous": 0.05,
+    "layered": 0.25,
+    "curved": 0.15,
+    "faulted": 0.15,
+    "pinchout": 0.2,
+    "unconformity": 0.1,
+    "lens": 0.05,
+    "fluid_contact": 0.05
+  },
+  "splits": {
+    "train": 20000,
+    "val": 2000,
+    "test": 2000,
+    "ood_contrast": 1000
+  },
+  "ood": {
+    "delta_log10": [
+      1.8,
+      2.4
+    ]
+  },
+  "quality": {
+    "min_minority_fraction": 0.01,
+    "max_attempts": 100
+  }
+}

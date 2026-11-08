@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+weights/**/*.ckpt
+weights/**/*.pt
+weights/**/*.pth
+weights/**/*.safetensors
+# Generated data and experiment outputs stay on the machine that creates them.
+datasets/
+runs/
+evaluations/
+# Machine-specific secrets and configuration are never part of source sync.
+.env
+.env.*

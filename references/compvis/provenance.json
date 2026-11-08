@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/CompVis/latent-diffusion",
+  "commit": "a506df5756472e2ebaf9078affdde2c4f1502cd4",
+  "upstream_path": "ldm/models/autoencoder.py",
+  "local_file": "autoencoder_original.py",
+  "sha256": "8ba30483454b431e0642c229f286fe387c60130c26516cd392594186f9b4a4e5",
+  "patches": []
+}

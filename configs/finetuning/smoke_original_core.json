@@ -1,0 +1,74 @@
+{
+  "schema_version": 2,
+  "reference": {
+    "name": "smoke_original_core",
+    "basis": "CompVis core + LWD pipeline verification only",
+    "status": "Synthetic/random initialization; no scientific validation",
+    "assumptions": [
+      "Reduced 32-channel network; no pretrained or perceptual weights; two short CPU epochs.",
+      "Dataset v2.2 uses a globally aligned y-z frame and a horizontal reference sequence with local anticlines and inclined fault offsets; isolated block/lens bodies are excluded. Tool inclination belongs to the forward model."
+    ]
+  },
+  "paths": {
+    "dataset": "datasets/smoke_global_v2_2",
+    "output": "runs/finetuning_smoke_global_v2_2",
+    "vae_weights": null,
+    "alexnet_weights": null
+  },
+  "model": {
+    "base_channels": 32,
+    "channel_mult": [
+      1,
+      2,
+      4,
+      4
+    ],
+    "num_res_blocks": 1,
+    "latent_channels": 4,
+    "dropout": 0.0
+  },
+  "initialization": {
+    "mode": "scratch",
+    "rgb_to_gray": "mean"
+  },
+  "loss": {
+    "pixel": "mse",
+    "feature": "none",
+    "feature_weight": 0.0,
+    "feature_layers": [
+      1,
+      4,
+      7,
+      9,
+      11
+    ],
+    "kl_weight": 1e-05,
+    "kl_reduction": "sum_per_sample",
+    "kl_warmup_epochs": 0,
+    "feature_decay_after_epoch": null,
+    "feature_decay_factor": 1.0
+  },
+  "optimizer": {
+    "name": "sgd",
+    "learning_rate": 0.0002,
+    "momentum": 0.9,
+    "weight_decay": 0.0005
+  },
+  "training": {
+    "seed": 20261104,
+    "epochs": 2,
+    "batch_size": 2,
+    "workers": 0,
+    "cpu_threads": 1,
+    "precision": "float32",
+    "grad_clip_norm": null,
+    "patience": 0,
+    "min_delta": 0.0,
+    "max_train_samples": 8,
+    "max_val_samples": 4
+  },
+  "ema": {
+    "decay": 0.0,
+    "policy": "epoch_copyback"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "repository": "https://github.com/CompVis/latent-diffusion",
+  "commit": "a506df5756472e2ebaf9078affdde2c4f1502cd4",
+  "patch": "Only absolute import prefixes changed: from ldm. -> from lwd_vae.vendor.compvis.ldm.",
+  "files": [
+    {
+      "path": "ldm/util.py",
+      "upstream_sha256": "5ed0d2cf71ecb6e8c2b8db0d275e11a9767d937bbcc745d754b36593d11eed05",
+      "local_sha256": "5ed0d2cf71ecb6e8c2b8db0d275e11a9767d937bbcc745d754b36593d11eed05"
+    },
+    {
+      "path": "ldm/modules/attention.py",
+      "upstream_sha256": "012198f441427ef892da0b6efc5ea9fae8e414aefcc65504577b41c2afd3526e",
+      "local_sha256": "25961b2f7301dc4ca13c73583706237b3d5f1783d0271df814ef8c37feddb56e"
+    },
+    {
+      "path": "ldm/modules/diffusionmodules/model.py",
+      "upstream_sha256": "043ff43c4d4304f7259419d1bd4529445da71661b5362653ecd174bd4342c413",
+      "local_sha256": "f634eb308409237fc7fb2aa79ec7911b5c82649b07668a1b40946d28fecf3894"
+    },
+    {
+      "path": "ldm/modules/diffusionmodules/util.py",
+      "upstream_sha256": "5dd19ed7536cc9095ab5d3ca4c09bde5283c0779207a1aa019c05565a2502dca",
+      "local_sha256": "d503d9d5faff046039538a747ce5ac352e69cc208e9d801a950e0659528c1d65"
+    },
+    {
+      "path": "ldm/modules/distributions/distributions.py",
+      "upstream_sha256": "a304b343529b915c8d7191f696adcb7bbdd539ea9b9eed30ef0bad6d9565ee28",
+      "local_sha256": "a304b343529b915c8d7191f696adcb7bbdd539ea9b9eed30ef0bad6d9565ee28"
+    },
+    {
+      "path": "ldm/modules/ema.py",
+      "upstream_sha256": "96cf170a9d7b49c846990694a0abef039e2046d934d37f7a219015ccc0da4e1b",
+      "local_sha256": "96cf170a9d7b49c846990694a0abef039e2046d934d37f7a219015ccc0da4e1b"
+    }
+  ]
+}

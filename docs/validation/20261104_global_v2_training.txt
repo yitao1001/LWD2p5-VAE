@@ -1,0 +1,6 @@
+making attention of type 'vanilla' with 128 in_channels
+Working with z of shape (1, 4, 16, 16) = 1024 dimensions.
+making attention of type 'vanilla' with 128 in_channels
+epoch 1/2 loss=0.295657 val_RMSE(log10rho)=1.19922 best=1.19922
+epoch 2/2 loss=0.269394 val_RMSE(log10rho)=1.15058 best=1.15058
+Best checkpoint: /Users/yitao/Documents/2026LWD_Aramco/VAE_LWD2p5Inversion/runs/finetuning_smoke_global_v2/checkpoints/best.pt

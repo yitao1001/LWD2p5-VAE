@@ -1,0 +1,105 @@
+{
+  "date": "2026-11-06",
+  "generator_version": "2.1.0",
+  "schema_version": 2,
+  "change": {
+    "removed_family": "block",
+    "layered_weight_before": 0.2,
+    "layered_weight_after": 0.25,
+    "family_count": 8
+  },
+  "family_weights": {
+    "homogeneous": 0.05,
+    "layered": 0.25,
+    "curved": 0.15,
+    "faulted": 0.15,
+    "pinchout": 0.2,
+    "unconformity": 0.1,
+    "lens": 0.05,
+    "fluid_contact": 0.05
+  },
+  "dataset": {
+    "path": "datasets/smoke_global_v2_1",
+    "total_count": 144,
+    "splits": {
+      "train": {
+        "count": 90,
+        "family_counts": {
+          "curved": 14,
+          "pinchout": 18,
+          "faulted": 13,
+          "layered": 23,
+          "homogeneous": 5,
+          "unconformity": 9,
+          "lens": 4,
+          "fluid_contact": 4
+        },
+        "no_block": true,
+        "all_samples_valid": true
+      },
+      "val": {
+        "count": 18,
+        "family_counts": {
+          "layered": 4,
+          "faulted": 3,
+          "pinchout": 3,
+          "homogeneous": 1,
+          "fluid_contact": 1,
+          "unconformity": 2,
+          "lens": 1,
+          "curved": 3
+        },
+        "no_block": true,
+        "all_samples_valid": true
+      },
+      "test": {
+        "count": 18,
+        "family_counts": {
+          "curved": 3,
+          "layered": 4,
+          "unconformity": 2,
+          "faulted": 3,
+          "lens": 1,
+          "pinchout": 3,
+          "homogeneous": 1,
+          "fluid_contact": 1
+        },
+        "no_block": true,
+        "all_samples_valid": true
+      },
+      "ood_contrast": {
+        "count": 18,
+        "family_counts": {
+          "pinchout": 4,
+          "layered": 4,
+          "fluid_contact": 1,
+          "faulted": 3,
+          "unconformity": 2,
+          "curved": 3,
+          "lens": 1
+        },
+        "no_block": true,
+        "all_samples_valid": true
+      }
+    },
+    "preview": "datasets/smoke_global_v2_1/preview_train.png",
+    "manifest_sha256": "2363fa492a78d557cd6963ec8de2af3f6471b06527cc4901c379de42451fdeb1"
+  },
+  "tests": {
+    "command": ".venv/bin/python -m unittest discover -s tests -v",
+    "count": 56,
+    "status": "passed",
+    "log": "docs/validation/20261106_no_blocks_tests.txt"
+  },
+  "historical_data": {
+    "path": "datasets/smoke_global_v2",
+    "source_snapshot": "references/dataset_global_v2",
+    "snapshot_matches_old_manifest": true
+  },
+  "formal_dataset": {
+    "default_path": "datasets/lwd_global_v2_1",
+    "generated": false,
+    "configured_sample_count": 25000
+  },
+  "scope": "Code, data contracts, short training/evaluation tests using synthetic weights; not scientific validation of a trained LWD prior."
+}

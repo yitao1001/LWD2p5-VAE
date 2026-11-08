@@ -1,0 +1,10 @@
+# Python >=3.10. Install a PyTorch wheel suited to your CPU/CUDA platform.
+torch>=2.6,<3
+torchvision>=0.21,<1
+einops>=0.8,<1
+lpips==0.1.4
+numpy>=1.24
+matplotlib>=3.7
+safetensors>=0.4
+# CompVis computational core is vendored at a fixed commit; no Lightning/W&B.
+# VAE and ImageNet AlexNet weights must be supplied explicitly as local files.

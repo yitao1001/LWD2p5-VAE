@@ -1,0 +1,79 @@
+{
+  "schema_version": 2,
+  "reference": {
+    "name": "inverse_scattering_reference",
+    "basis": "User-provided sdvae_model_finetune.py + kl_f8.yaml + debugpy launch configuration",
+    "status": "Corrected-code LWD adaptation; corresponding publication not identified",
+    "assumptions": [
+      "Enable pretrained initialization explicitly; uploaded snapshot had vae_finetune=False.",
+      "Use the supplied LPIPS coefficient 1.0 instead of the snapshot wiring error args.kl_weight.",
+      "Preserve L1 + official AlexNet LPIPS v0.1 + summed KL, SGD and epoch-wise LitEma copyback.",
+      "Preserve the initial 10-epoch schedule: LPIPS coefficient is reduced after epoch 7; extending training does not move this milestone.",
+      "Use local official ImageNet AlexNet weights; frozen LPIPS is always in eval mode.",
+      "48x120 input, batch4 and float32 replace the supplied 64x64, batch64 and precision16 to fit the initial LWD workflow.",
+      "Dataset v2.2 uses a globally aligned y-z frame and a horizontal reference sequence with local anticlines and inclined fault offsets; isolated block/lens bodies are excluded. Tool inclination belongs to the forward model."
+    ]
+  },
+  "paths": {
+    "dataset": "datasets/lwd_global_v2_2",
+    "output": "runs/finetuning_inverse_scattering_global_v2_2",
+    "vae_weights": "weights/vae/kl_f8.ckpt",
+    "alexnet_weights": "weights/perceptual/alexnet_imagenet.pth"
+  },
+  "model": {
+    "base_channels": 128,
+    "channel_mult": [
+      1,
+      2,
+      4,
+      4
+    ],
+    "num_res_blocks": 2,
+    "latent_channels": 4,
+    "dropout": 0.0
+  },
+  "initialization": {
+    "mode": "pretrained",
+    "rgb_to_gray": "mean"
+  },
+  "loss": {
+    "pixel": "l1",
+    "feature": "lpips_alex",
+    "feature_weight": 1.0,
+    "feature_layers": [
+      1,
+      4,
+      7,
+      9,
+      11
+    ],
+    "kl_weight": 1e-05,
+    "kl_reduction": "sum_per_sample",
+    "kl_warmup_epochs": 0,
+    "feature_decay_after_epoch": 7,
+    "feature_decay_factor": 0.1
+  },
+  "optimizer": {
+    "name": "sgd",
+    "learning_rate": 0.0002,
+    "momentum": 0.9,
+    "weight_decay": 0.0005
+  },
+  "training": {
+    "seed": 20261104,
+    "epochs": 10,
+    "batch_size": 4,
+    "workers": 0,
+    "cpu_threads": 4,
+    "precision": "float32",
+    "grad_clip_norm": null,
+    "patience": 0,
+    "min_delta": 0.0,
+    "max_train_samples": null,
+    "max_val_samples": null
+  },
+  "ema": {
+    "decay": 0.99,
+    "policy": "epoch_copyback"
+  }
+}
