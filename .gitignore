@@ -10,6 +10,7 @@ weights/**/*.safetensors
 datasets/
 runs/
 evaluations/
+reports/
 # Machine-specific secrets and configuration are never part of source sync.
 .env
 .env.*
