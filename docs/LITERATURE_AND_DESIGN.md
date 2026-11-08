@@ -1,3 +1,5 @@
+> 训练实现已于 2026-11-08 统一为 CSEM 论文路线；下文涉及两路线的描述为历史记录。当前以 [对齐说明](CSEM_ALIGNMENT_CN.md) 和 [训练指南](../TRAINING.md) 为准。
+
 # 文献与数据集设计依据 / Literature and design notes
 
 数据文献检索日期：2026-10-15；训练方案归属与实现状态更新：2026-11-04。区分论文明确报道、提供源码的实际状态和本次工程判断。下文列出的空间尺寸不能直接等同于当前 500 kHz、16/24/32 inch 源距工具的探测范围。
@@ -27,7 +29,7 @@ EN: A model-space VAE prior is coupled to physics-based GN inversion. We borrow 
 | 431、441 | 验证比例硬编码0.1；`lpips_loss_weight=args.kl_weight` 传错参数 |
 | 358–363 | nn.Module访问 `self.trainer.datamodule` 且将latent强制square |
 
-原文件保持原样。新主入口 `train_vae.py` 已分别实现两套参考微调配置，修正开关与损失参数接线，并接入 LWD 数据、验证、续训和测试接口。迁移假设及验证边界见 [方法对照](docs/METHODS_AND_ASSUMPTIONS_CN.md) 和 [训练指南](TRAINING.md)。
+原文件保持原样。新主入口 `train_vae.py` 已分别实现两套参考微调配置，修正开关与损失参数接线，并接入 LWD 数据、验证、续训和测试接口。迁移假设及验证边界见 [方法对照](archive/METHODS_AND_ASSUMPTIONS_v2_CN.md) 和 [训练指南](../TRAINING.md)。
 
 ## 真正 2.5D 的主要 LWD 依据
 
@@ -77,7 +79,7 @@ EN: Stitched 1D inversion is a useful baseline but is not equivalent to 2.5D pix
 
 ## 本次推导的配置选择
 
-2026-11-04 更新：当前 v2 按用户选择删除随机整体地层倾角，使用全局坐标对齐的水平背景；断层、曲率、侵蚀和尖灭仍作为局部地质形态。固定全局坐标本身不意味着所有真实地层必然水平，此处是本版先验范围的选择。旧文献案例中的倾斜地层并不自动进入当前默认数据集。详见 [v2 说明](docs/DATASET_GLOBAL_V2_CN.md)。
+2026-11-04 更新：当前 v2 按用户选择删除随机整体地层倾角，使用全局坐标对齐的水平背景；断层、曲率、侵蚀和尖灭仍作为局部地质形态。固定全局坐标本身不意味着所有真实地层必然水平，此处是本版先验范围的选择。旧文献案例中的倾斜地层并不自动进入当前默认数据集。详见 [v2 说明](DATASET_GLOBAL_V2_CN.md)。
 
 1. 使用当前反演的10×4 ft、1 inch网格，而非marine CSEM的20 km/百米目标；不改变物理长宽比。
 2. 主体为有层序的模型；高/低阻都出现，均匀模型占5%，少量孤立异常用于对照。初版两端元层序是可解释的简化，未来可加入每层独立ρ与层内变化。

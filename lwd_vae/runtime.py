@@ -127,18 +127,18 @@ def save_checkpoint(path, state):
 
 def load_checkpoint(path, device="cpu"):
     checkpoint = torch.load(path, map_location="cpu", weights_only=True)
-    if not isinstance(checkpoint, dict) or checkpoint.get("format") not in ("lwd_vae_training_v1", "lwd_vae_finetuning_v2"):
+    if not isinstance(checkpoint, dict) or checkpoint.get("format") not in ("lwd_vae_training_v1", "lwd_vae_finetuning_v2", "lwd_vae_csem_v3"):
         raise ValueError("Expected a training checkpoint from train_vae.py; use --pretrained for external weights")
     for key in ("model_spec", "model_state", "data_contract", "epoch", "training_config"):
         if key not in checkpoint:
             raise ValueError(f"Missing checkpoint field: {key}")
-    if checkpoint["format"] == "lwd_vae_finetuning_v2":
+    if checkpoint["format"] in ("lwd_vae_finetuning_v2", "lwd_vae_csem_v3"):
         from .finetuning.model import CompVisKLF8, upstream_provenance
         if checkpoint.get("model_backend") != "compvis_original_core" or checkpoint.get("upstream_commit") != upstream_provenance()["commit"]:
             raise ValueError("Checkpoint CompVis backend/version differs from the installed reference source")
         model = CompVisKLF8(checkpoint["model_spec"])
     else:
-        from .model import AutoencoderKL
+        from .legacy.model import AutoencoderKL
         model = AutoencoderKL(checkpoint["model_spec"])
     model.load_state_dict(checkpoint["model_state"], strict=True)
     model.to(select_device(str(device)))

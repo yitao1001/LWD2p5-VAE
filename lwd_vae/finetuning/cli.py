@@ -8,7 +8,7 @@ from .config import DEFAULT_CONFIG, load_config, missing_inputs, resolve_paths, 
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="LWD VAE：CompVis kl-f8 参考方案微调")
+    parser = argparse.ArgumentParser(description="LWD VAE：CSEM 论文路线，预训练 KL-f8 微调")
     parser.add_argument("--config", help="项目根目录相对路径或绝对路径；默认 CSEM 参考配置")
     parser.add_argument("--dataset", help="覆盖数据集目录")
     parser.add_argument("--output", help="覆盖输出目录；必须为新目录")
@@ -17,9 +17,10 @@ def main(argv=None):
     parser.add_argument("--resume", help="续训 checkpoints/last.pt；必须指定新的 --output")
     parser.add_argument("--device", default="auto", help="auto/cpu/mps/cuda/cuda:N")
     parser.add_argument("--epochs", type=int, help="总训练轮数，续训时也表示总数")
+    parser.add_argument("--allow-smoke-test", action="store_true", help="明确允许缩小网络/随机初始化的流程测试；不用于正式训练")
     inspect = parser.add_mutually_exclusive_group()
     inspect.add_argument("--print-config", action="store_true", help="仅显示配置及绝对路径，无需 PyTorch")
-    inspect.add_argument("--check-only", action="store_true", help="检查输入文件及数据集，不训练")
+    inspect.add_argument("--check-only", action="store_true", help="严格加载权重、校验数据并执行前向，不训练")
     args = parser.parse_args(argv)
     try:
         if args.resume:
@@ -45,21 +46,14 @@ def main(argv=None):
                 print(json.dumps({"config": config, "resolved_paths": {
                     k: str(v) if v else None for k, v in paths.items()}}, indent=2, ensure_ascii=False))
                 return 0
+            if config["purpose"] == "smoke_test" and not args.allow_smoke_test:
+                parser.error("测试配置必须显式传 --allow-smoke-test；正式微调请使用默认配置")
             missing = missing_inputs(config)
             if missing:
                 raise FileNotFoundError("缺少必需输入：\n  " + "\n  ".join(missing) + "\n请参阅 TRAINING.md 和 weights/README.md。")
             if args.check_only:
-                from ..dataset import LWDVAEDataset
-                for split in ("train", "val"):
-                    with LWDVAEDataset(paths["dataset"], split) as dataset:
-                        dataset.validate_all()
-                        height, width = dataset.image_shape[-2:]
-                        if not len(dataset) or height % 8 or width % 8:
-                            raise ValueError("Train/val 必须非空，且高宽均能被 8 整除")
-                        if config["loss"]["feature"] != "none" and min(height, width) < 32:
-                            raise ValueError("AlexNet 特征损失要求高宽均至少为 32")
-                        print(f"{split}: {len(dataset)} samples, shape={dataset.image_shape}")
-                print("路径和数据检查通过；权重兼容性及网络前向检查在正式启动训练时执行。")
+                from .preflight import check_setup
+                print(json.dumps(check_setup(config, args.device), indent=2, ensure_ascii=False))
                 return 0
             from .trainer import train
             result = train(config, device_name=args.device)

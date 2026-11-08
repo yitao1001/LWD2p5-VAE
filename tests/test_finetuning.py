@@ -1,4 +1,4 @@
-"""新参考路线的行为测试；所有伪造权重仅用于接口验证，不能用于科研训练。"""
+"""CSEM 单一路线的行为测试；所有伪造权重仅用于接口验证，不能用于科研训练。"""
 from __future__ import annotations
 
 import argparse
@@ -10,6 +10,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 from unittest.mock import patch
 
@@ -20,7 +21,7 @@ from torchvision.models import alexnet
 
 from lwd_vae.dataset import LWDVAEDataset
 from lwd_vae.finetuning.config import PROJECT_ROOT, load_config, resolve_paths, validate_config
-from lwd_vae.finetuning.features import AlexNetFeatureL2, AlexNetLPIPS
+from lwd_vae.finetuning.features import AlexNetFeatureL2
 from lwd_vae.finetuning.losses import VAELoss, loss_coefficients
 from lwd_vae.finetuning.model import CompVisKLF8, Encoder, Decoder, DiagonalGaussianDistribution, upstream_provenance
 from lwd_vae.finetuning.trainer import train
@@ -30,7 +31,6 @@ from lwd_vae.weights import load_pretrained
 from test_vae import run as evaluate
 
 ROOT = PROJECT_ROOT
-DATA = ROOT / 'datasets/smoke_global_v2_2'
 
 
 class FinetuningTests(unittest.TestCase):
@@ -40,7 +40,12 @@ class FinetuningTests(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory(prefix='lwd_reference_tests_')
         cls.addClassCleanup(cls.temp.cleanup)
         cls.work = Path(cls.temp.name)
-        cls.config = load_config('configs/finetuning/smoke_original_core.json')
+        cls.config = load_config('configs/testing/vae_smoke.json')
+        from lwd_vae.generation import generate_dataset, load_config as load_data_config
+        cls.data = cls.work / 'dataset'
+        data_config = load_data_config(ROOT / 'configs/lwd_default.json')
+        data_config['splits'] = {key: 20 for key in data_config['splits']}
+        generate_dataset(data_config, cls.data)
         cls.config['training'].update(epochs=1, max_train_samples=2, max_val_samples=2)
         cls.config['model']['dropout'] = 0.1
         cls.alex_path = cls.work / 'synthetic_alexnet.pth'
@@ -51,7 +56,7 @@ class FinetuningTests(unittest.TestCase):
 
     def make_config(self, name, feature='none'):
         config = deepcopy(self.config)
-        config['paths'].update(output=str(self.work / name), dataset=str(DATA))
+        config['paths'].update(output=str(self.work / name), dataset=str(self.data))
         if feature != 'none':
             config['loss'].update(feature=feature, feature_weight=1.0)
             config['paths']['alexnet_weights'] = str(self.alex_path)
@@ -83,6 +88,36 @@ class FinetuningTests(unittest.TestCase):
         bad['loss']['misspelled_weight'] = 1
         with self.assertRaises(ValueError):
             validate_config(bad)
+
+    def test_formal_route_rejects_random_init_small_network_and_inverse_loss(self):
+        for mutation in (
+            lambda c: c['initialization'].update(mode='scratch'),
+            lambda c: c['model'].update(base_channels=32),
+            lambda c: c['loss'].update(pixel='l1'),
+            lambda c: c['loss'].update(feature='lpips_alex'),
+            lambda c: c['initialization'].update(rgb_to_gray='sum'),
+        ):
+            config = load_config()
+            mutation(config)
+            with self.assertRaises(ValueError):
+                validate_config(config)
+        result = subprocess.run([sys.executable, str(ROOT / 'train_vae.py'),
+            '--config', 'configs/testing/vae_smoke.json'], capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('--allow-smoke-test', result.stderr)
+
+    def test_check_only_loads_weights_and_runs_real_forward(self):
+        from lwd_vae.finetuning.preflight import check_setup
+        config = self.make_config('check_only', 'alexnet_l2')
+        config['initialization']['mode'] = 'pretrained'
+        config['paths']['vae_weights'] = str(self.vae_path)
+        report = check_setup(config)
+        self.assertEqual(report['posterior_shape'], [4, 6, 15])
+        self.assertGreater(report['initialization']['matched_tensor_count'], 0)
+        self.assertFalse(resolve_paths(config)['output'].exists())
+        config['paths']['vae_weights'] = str(self.alex_path)
+        with self.assertRaisesRegex(ValueError, 'no weights loaded'):
+            check_setup(config)
 
     def test_vendor_source_is_unmodified_except_import_prefix(self):
         base = ROOT / 'lwd_vae/vendor/compvis'
@@ -134,27 +169,39 @@ class FinetuningTests(unittest.TestCase):
             load_pretrained(model, path, rgb_to_gray='mean')
         self.assert_state_equal(before, model.state_dict())
 
-    def test_kl_reduction_and_feature_schedule(self):
+    def test_official_legacy_lightning_callback_marker_is_data_only(self):
+        # 复现官方 KL-f8 将旧回调类存为字典键的格式；不需要安装 Lightning。
+        name = 'pytorch_lightning.callbacks.model_checkpoint'
+        modules = {key: types.ModuleType(key) for key in (
+            'pytorch_lightning', 'pytorch_lightning.callbacks', name)}
+        marker = type('ModelCheckpoint', (), {'__module__': name})
+        modules[name].ModelCheckpoint = marker
+        model = CompVisKLF8(self.config['model'])
+        path = self.work / 'official_layout.ckpt'
+        with patch.dict(sys.modules, modules):
+            torch.save({'state_dict': model.state_dict(), 'callbacks': {marker: {'epoch': 4}}}, path)
+        loaded = CompVisKLF8(self.config['model'])
+        report = load_pretrained(loaded, path)
+        self.assertEqual(report['matched_tensor_count'], len(model.state_dict()))
+        self.assert_state_equal(loaded.state_dict(), model.state_dict())
+
+    def test_kl_reduction_and_fixed_coefficients(self):
         settings = deepcopy(self.config['loss'])
         prediction = torch.ones(2, 1, 48, 120, requires_grad=True)
         mean = torch.ones(2, 4, 6, 15, requires_grad=True)
         posterior = DiagonalGaussianDistribution(torch.cat([mean, torch.zeros_like(mean)], dim=1))
         target = torch.zeros_like(prediction)
         summed = VAELoss(settings, None)(prediction, target, posterior, 0)
-        settings['kl_reduction'] = 'mean_per_element'
-        averaged = VAELoss(settings, None)(prediction, target, posterior, 0)
         self.assertEqual(summed['kl'].item(), 180)
-        self.assertEqual(averaged['kl'].item(), 0.5)
+        self.assertEqual(summed['kl_per_latent'].item(), 0.5)
         torch.testing.assert_close(summed['loss'], summed['pixel'] + 1e-5 * summed['kl'])
         summed['loss'].backward()
         self.assertGreater(mean.grad.abs().sum().item(), 0)
-        inverse = load_config('configs/finetuning/inverse_scattering_reference.json')['loss']
-        self.assertEqual(loss_coefficients(inverse, 6), (1.0, 1e-5))
-        self.assertEqual(loss_coefficients(inverse, 7), (0.1, 1e-5))
+        self.assertEqual(loss_coefficients(settings, 0), loss_coefficients(settings, 99))
 
-    def test_both_frozen_feature_losses_keep_input_gradient_without_download(self):
+    def test_frozen_feature_loss_keeps_input_gradient_without_download(self):
         with patch('torch.hub.download_url_to_file', side_effect=AssertionError('implicit download')):
-            for kind in ('alexnet_l2', 'lpips_alex'):
+            for kind in ('alexnet_l2',):
                 with self.subTest(kind=kind):
                     settings = self.make_config('unused', kind)['loss']
                     criterion = VAELoss(settings, self.alex_path)
@@ -169,22 +216,8 @@ class FinetuningTests(unittest.TestCase):
                     self.assertTrue(torch.isfinite(prediction.grad).all())
                     self.assertGreater(prediction.grad.abs().sum().item(), 0)
                     self.assertTrue(all(p.grad is None and not p.requires_grad for p in criterion.parameters()))
-                    # 自比较必须为零；两条路线均不能把特征权重误接到 KL 系数。
+                    # 自比较必须为零；不能把特征权重误接到 KL 系数。
                     self.assertAlmostEqual(criterion.feature_network(target, target).item(), 0, places=7)
-
-    def test_lpips_agrees_with_official_trunk_and_calibration(self):
-        import lpips
-        source = alexnet(weights=None)
-        source.load_state_dict(torch.load(self.alex_path, weights_only=True))
-        # 官方 LPIPS 自己切分 AlexNet，独立检查适配器的五个 slice 没有错位。
-        with patch('lpips.pretrained_networks.tv.alexnet', return_value=source):
-            reference = lpips.LPIPS(net='alex', pnet_rand=True, verbose=False).eval()
-        adapter = AlexNetLPIPS(self.alex_path)
-        x, y = torch.randn(1, 1, 48, 120), torch.randn(1, 1, 48, 120)
-        with torch.no_grad():
-            expected = reference(x.repeat(1, 3, 1, 1), y.repeat(1, 3, 1, 1)).mean()
-            actual = adapter(x, y)
-        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
 
     def test_csem_feature_l2_matches_explicit_imagenet_activations(self):
         adapter = AlexNetFeatureL2(self.alex_path, [1, 4, 7, 9, 11])
@@ -204,12 +237,10 @@ class FinetuningTests(unittest.TestCase):
                     losses.append((a-b).square().mean())
             torch.testing.assert_close(adapter(x, y), torch.stack(losses).mean(), rtol=0, atol=0)
 
-    def test_pretrained_training_resume_with_ema_and_features_is_exact(self):
-        config = self.make_config('first', 'lpips_alex')
+    def test_pretrained_training_resume_with_features_is_exact(self):
+        config = self.make_config('first', 'alexnet_l2')
         config['initialization']['mode'] = 'pretrained'
         config['paths']['vae_weights'] = str(self.vae_path)
-        config['loss']['pixel'] = 'l1'
-        config['ema']['decay'] = .99
         train(config, device_name='cpu')
         first = self.work / 'first/checkpoints/last.pt'
         uninterrupted = self.work / 'continuous'
@@ -225,19 +256,18 @@ class FinetuningTests(unittest.TestCase):
             unavailable.rename(self.alex_path)
         _, a = load_checkpoint(resumed / 'checkpoints/last.pt')
         _, b = load_checkpoint(uninterrupted / 'checkpoints/last.pt')
-        for key in ('model_state', 'loss_state', 'optimizer_state', 'ema_state', 'best_val_rmse', 'best_epoch', 'global_step'):
+        for key in ('model_state', 'loss_state', 'optimizer_state', 'best_val_rmse', 'best_epoch', 'global_step'):
             self.assert_state_equal(a[key], b[key])
         for x, y in zip(a['history'], b['history']):
             self.assertEqual({k:v for k,v in x.items() if k!='seconds'}, {k:v for k,v in y.items() if k!='seconds'})
-        self.assertEqual(a['ema_state']['num_updates'].item(), 2)
-        self.assertEqual(a['format'], 'lwd_vae_finetuning_v2')
+        self.assertEqual(a['format'], 'lwd_vae_csem_v3')
 
     def test_csem_training_checkpoint_evaluation_and_latent_gradient(self):
         config = self.make_config('csem_integration', 'alexnet_l2')
         train(config, device_name='cpu')
         checkpoint = self.work / 'csem_integration/checkpoints/best.pt'
         wrapper = LWDVAE(checkpoint, device='cpu')
-        with LWDVAEDataset(DATA, 'test', as_torch=True) as dataset:
+        with LWDVAEDataset(self.data, 'test', as_torch=True) as dataset:
             lo, hi = dataset.log10_bounds
             raw = lo + (dataset[0].unsqueeze(0) + 1) * (hi-lo) / 2
         latent = wrapper.encode(raw).mode().detach().requires_grad_(True)
@@ -248,7 +278,7 @@ class FinetuningTests(unittest.TestCase):
         self.assertTrue(torch.isfinite(latent.grad).all())
         self.assertGreater(latent.grad.abs().sum().item(), 0)
         self.assertTrue(all(p.grad is None for p in wrapper.parameters()))
-        report = evaluate(argparse.Namespace(dataset=DATA, checkpoint=checkpoint,
+        report = evaluate(argparse.Namespace(dataset=self.data, checkpoint=checkpoint,
             output=self.work / 'evaluation', splits=None, device='cpu', batch_size=2,
             workers=0, max_samples=2, save_reconstructions=True, no_plots=True))
         self.assertTrue(np.isfinite(report['splits']['test']['overall']['rmse_log10']))
@@ -265,6 +295,23 @@ class FinetuningTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no weights loaded'):
             train(config, device_name='cpu')
         self.assertFalse(resolve_paths(config)['output'].exists())
+
+    def test_old_checkpoints_remain_readable_for_evaluation(self):
+        from lwd_vae.legacy.model import AutoencoderKL
+        from lwd_vae.finetuning.model import upstream_provenance
+        for version, model in (
+            ('lwd_vae_training_v1', AutoencoderKL(self.config['model'])),
+            ('lwd_vae_finetuning_v2', CompVisKLF8(self.config['model'])),
+        ):
+            checkpoint = self.work / f'{version}.pt'
+            torch.save({'format': version, 'model_state': model.state_dict(),
+                'model_spec': self.config['model'], 'data_contract': {}, 'epoch': 0,
+                'training_config': {}, 'model_backend': 'compvis_original_core',
+                'upstream_commit': upstream_provenance()['commit']}, checkpoint)
+            restored, _ = load_checkpoint(checkpoint)
+            self.assert_state_equal(restored.state_dict(), model.state_dict())
+            with self.assertRaisesRegex(ValueError, 'Only CSEM v3'):
+                train(resume=checkpoint, output=self.work / f'resume_{version}')
 
 
 if __name__ == '__main__':

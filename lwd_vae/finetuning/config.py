@@ -12,7 +12,9 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG = PROJECT_ROOT / "configs/finetuning/csem_reference.json"
+DEFAULT_CONFIG = PROJECT_ROOT / "configs/vae_finetune_csem.json"
+KL_F8_SPEC = {"base_channels": 128, "channel_mult": [1, 2, 4, 4],
+              "num_res_blocks": 2, "latent_channels": 4, "dropout": 0.0}
 
 
 def project_path(value: str | Path | None) -> Path | None:
@@ -42,9 +44,11 @@ def _integer(value, label, minimum=0):
 
 def validate_config(config: dict) -> dict:
     c = deepcopy(config)
-    _keys(c, ("schema_version", "reference", "paths", "model", "initialization", "loss", "optimizer", "training", "ema"), "config")
-    if type(c["schema_version"]) is not int or c["schema_version"] != 2:
-        raise ValueError("Expected finetuning config schema_version=2")
+    _keys(c, ("schema_version", "purpose", "reference", "paths", "model", "initialization", "loss", "optimizer", "training"), "config")
+    if type(c["schema_version"]) is not int or c["schema_version"] != 3:
+        raise ValueError("Expected CSEM config schema_version=3; historical configurations are archived")
+    if c["purpose"] not in ("finetune", "smoke_test"):
+        raise ValueError("purpose must be finetune or smoke_test")
     _keys(c["reference"], ("name", "basis", "status", "assumptions"), "reference")
     for key in ("name", "basis", "status"):
         if not isinstance(c["reference"][key], str) or not c["reference"][key].strip():
@@ -73,23 +77,20 @@ def validate_config(config: dict) -> dict:
         raise ValueError("dropout must be < 1")
     init = c["initialization"]
     _keys(init, ("mode", "rgb_to_gray"), "initialization")
-    if init["mode"] not in ("pretrained", "scratch") or init["rgb_to_gray"] not in ("mean", "sum"):
-        raise ValueError("initialization: mode=pretrained/scratch; rgb_to_gray=mean/sum")
+    if init["mode"] not in ("pretrained", "scratch") or init["rgb_to_gray"] != "mean":
+        raise ValueError("CSEM uses mean RGB-to-gray adaptation; mode=pretrained/scratch")
     if init["mode"] == "pretrained" and not c["paths"]["vae_weights"]:
         raise ValueError("pretrained mode requires paths.vae_weights; no random-init fallback")
     if init["mode"] == "scratch" and c["paths"]["vae_weights"] is not None:
         raise ValueError("scratch mode requires vae_weights=null, so a checkpoint is never silently ignored")
     loss = c["loss"]
-    _keys(loss, ("pixel", "feature", "feature_weight", "feature_layers", "kl_weight", "kl_reduction", "kl_warmup_epochs", "feature_decay_after_epoch", "feature_decay_factor"), "loss")
-    if loss["pixel"] not in ("mse", "l1") or loss["feature"] not in ("alexnet_l2", "lpips_alex", "none"):
-        raise ValueError("loss: pixel=mse/l1; feature=alexnet_l2/lpips_alex/none")
-    if loss["kl_reduction"] not in ("sum_per_sample", "mean_per_element"):
-        raise ValueError("kl_reduction must be sum_per_sample or mean_per_element")
-    for key in ("feature_weight", "kl_weight", "feature_decay_factor"):
+    _keys(loss, ("pixel", "feature", "feature_weight", "feature_layers", "kl_weight", "kl_reduction"), "loss")
+    if loss["pixel"] != "mse" or loss["feature"] not in ("alexnet_l2", "none"):
+        raise ValueError("CSEM route requires pixel=mse and feature=alexnet_l2 (none only for smoke tests)")
+    if loss["kl_reduction"] != "sum_per_sample":
+        raise ValueError("KL is summed over latent elements then averaged over the batch")
+    for key in ("feature_weight", "kl_weight"):
         _number(loss[key], f"loss.{key}")
-    _integer(loss["kl_warmup_epochs"], "loss.kl_warmup_epochs")
-    if loss["feature_decay_after_epoch"] is not None:
-        _integer(loss["feature_decay_after_epoch"], "loss.feature_decay_after_epoch", 1)
     layers = loss["feature_layers"]
     if not isinstance(layers, list) or not layers or any(type(x) is not int or x not in (1, 4, 7, 9, 11) for x in layers) or sorted(set(layers)) != layers:
         raise ValueError("feature_layers must be an increasing subset of AlexNet ReLU indices [1,4,7,9,11]")
@@ -97,19 +98,15 @@ def validate_config(config: dict) -> dict:
         raise ValueError("feature=none requires feature_weight=0")
     if loss["feature"] != "none" and (not c["paths"]["alexnet_weights"] or loss["feature_weight"] <= 0):
         raise ValueError("Feature loss requires local alexnet_weights and a positive feature_weight")
-    if loss["feature"] == "lpips_alex" and layers != [1, 4, 7, 9, 11]:
-        raise ValueError("LPIPS uses all five official AlexNet slices; feature_layers cannot override them")
     optimizer = c["optimizer"]
     _keys(optimizer, ("name", "learning_rate", "momentum", "weight_decay"), "optimizer")
-    if optimizer["name"] not in ("sgd", "adamw"):
-        raise ValueError("optimizer.name must be sgd or adamw")
+    if optimizer["name"] != "sgd":
+        raise ValueError("This training route uses SGD; optimizer choice is an explicit LWD setting")
     _number(optimizer["learning_rate"], "optimizer.learning_rate", positive=True)
     _number(optimizer["weight_decay"], "optimizer.weight_decay")
     _number(optimizer["momentum"], "optimizer.momentum")
     if optimizer["momentum"] >= 1:
         raise ValueError("momentum must be < 1")
-    if optimizer["name"] == "adamw" and optimizer["momentum"] != 0:
-        raise ValueError("AdamW uses its standard betas; set the unused momentum field to 0")
     t = c["training"]
     _keys(t, ("seed", "epochs", "batch_size", "workers", "cpu_threads", "precision", "grad_clip_norm", "patience", "min_delta", "max_train_samples", "max_val_samples"), "training")
     for key in ("seed", "epochs", "batch_size", "workers", "cpu_threads", "patience"):
@@ -122,10 +119,10 @@ def validate_config(config: dict) -> dict:
     _number(t["min_delta"], "training.min_delta")
     if t["precision"] not in ("float32", "float16", "bfloat16"):
         raise ValueError("precision must be float32, float16 or bfloat16")
-    _keys(c["ema"], ("decay", "policy"), "ema")
-    _number(c["ema"]["decay"], "ema.decay")
-    if c["ema"]["decay"] >= 1 or c["ema"]["policy"] != "epoch_copyback":
-        raise ValueError("EMA: 0 <= decay < 1; policy must be epoch_copyback (uploaded script convention)")
+    # 正式路线不能因权重没准备好而无声变成小网络或从头训练。
+    if c["purpose"] == "finetune":
+        if init["mode"] != "pretrained" or m != KL_F8_SPEC or loss["feature"] != "alexnet_l2":
+            raise ValueError("Formal fine-tuning requires pretrained full KL-f8 and frozen AlexNet L2")
     return c
 
 

@@ -14,9 +14,9 @@ import torch
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, Subset
 
-from .dataset import LWDVAEDataset
+from ..dataset import LWDVAEDataset
 from .model import AutoencoderKL, load_pretrained
-from .runtime import (capture_rng, cpu_tree, data_contract, load_checkpoint, restore_rng,
+from ..runtime import (capture_rng, cpu_tree, data_contract, load_checkpoint, restore_rng,
                       save_checkpoint, seed_everything, select_device, sha256_file,
                       validate_data_contract, write_json)
 
@@ -176,7 +176,7 @@ def train(dataset_root, output, config=None, *, device_name="auto", pretrained=N
             source_path = Path(resume).resolve().parent / "best.pt"
             best_model, source_best = load_checkpoint(source_path, "cpu")
             del best_model
-            from .runtime import same_data_contract
+            from ..runtime import same_data_contract
             if source_best["epoch"] != best_epoch or source_best["best_val_rmse"] != best_rmse or not same_data_contract(source_best["data_contract"], resume_state["data_contract"]):
                 raise ValueError("Sibling best.pt does not match resumed checkpoint")
     else:

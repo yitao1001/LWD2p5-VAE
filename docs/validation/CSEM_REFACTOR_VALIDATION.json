@@ -1,0 +1,55 @@
+{
+  "date": "2026-11-08",
+  "scope": "CSEM-paper KL-f8 fine-tuning route for LWD; pipeline verification, not convergence or EM inversion validation",
+  "tests": {
+    "command": ".venv/bin/python -m unittest discover -s tests -v",
+    "passed": 43,
+    "failed": 0,
+    "self_contained_data": true,
+    "log": "docs/validation/20261108_csem_v3_tests.txt"
+  },
+  "local_environment": {
+    "python": "3.11.15",
+    "torch": "2.6.0",
+    "torchvision": "0.21.0",
+    "device": "cpu"
+  },
+  "dataset_generator_unchanged": {
+    "sha256": "8ed6e1ff1975ea2fa899127dce753d1fba2fd9bad1668494bfa3e9b58aa0d963",
+    "dataset_config_changed": false,
+    "formal_dataset_regenerated": false
+  },
+  "pretrained": {
+    "vae_sha256": "c9890a9697c53045ad52965b33aadc3429d43a644c9af4c01ede3d551f3adf0a",
+    "matched_tensors": 248,
+    "adapted_tensors": 3,
+    "trainable_parameters": 83649253,
+    "frozen_alexnet_parameters": 2469696,
+    "safe_legacy_lightning_marker_compatibility": true,
+    "arbitrary_pickle_enabled": false
+  },
+  "local_full_pretrained_run": {
+    "config": "configs/testing/vae_pretrained_check.json",
+    "output": "runs/validation_pretrained_csem_v3",
+    "train_samples": 2,
+    "validation_samples": 2,
+    "epochs": 1,
+    "optimizer_updates": 2,
+    "initial_validation_rmse_log10": 0.5992970924604486,
+    "final_validation_rmse_log10": 0.5872398707852026,
+    "evaluation_output": "evaluations/validation_pretrained_csem_v3",
+    "evaluation_samples_per_split": 2
+  },
+  "server_environment": {
+    "path": "/home/wytao/projects/VAE_LWD2p5Inversion/.venv",
+    "torch": "2.6.0+cu124",
+    "torchvision": "0.21.0+cu124",
+    "cuda_available": true
+  },
+  "full_dataset_training_started": false,
+  "limitations": [
+    "Numerical training settings and AlexNet feature reduction are explicit LWD choices, not recovered final-paper hyperparameters.",
+    "Two optimizer updates and tiny evaluation subsets do not establish convergence or geological/EM accuracy.",
+    "Original VAE model weights match completely; auxiliary network parameter counts do not reproduce the paper total."
+  ]
+}

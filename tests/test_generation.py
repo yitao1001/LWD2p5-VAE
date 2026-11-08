@@ -155,11 +155,14 @@ class GenerationTests(unittest.TestCase):
             np.testing.assert_array_equal(a, b)
 
     def test_default_evaluation_splits_follow_dataset_version(self):
-        root = CONFIG.parent.parent
-        self.assertEqual(evaluation_splits(root/'datasets/smoke_v1', None), ['test', 'ood_dip', 'ood_contrast'])
-        self.assertEqual(evaluation_splits(root/'datasets/smoke_global_v2', None), ['test', 'ood_contrast'])
-        with self.assertRaisesRegex(ValueError, 'absent'):
-            evaluation_splits(root/'datasets/smoke_global_v2', ['ood_dip'])
+        # 只测试 manifest 的选集规则；不依赖本机已生成但未入库的数据。
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for names in (['test', 'ood_dip', 'ood_contrast'], ['test', 'ood_contrast']):
+                (root / 'manifest.json').write_text(json.dumps({'splits': {n: {'count': 1} for n in names}}))
+                self.assertEqual(evaluation_splits(root, None), names)
+            with self.assertRaisesRegex(ValueError, 'absent'):
+                evaluation_splits(root, ['ood_dip'])
 
     def test_end_to_end_split_contract_and_exact_replay(self):
         config = deepcopy(self.config)

@@ -1,29 +1,25 @@
-# 外部预训练权重放在哪里
+# 通用预训练权重
 
-两条正式参考配置都需要：
+当前默认明确选择 **CompVis 原版 KL-f8**。它不是 CSEM 已微调权重，也不是后来发布的 SD `ft-MSE` / `ft-EMA` 版本。
 
-| 文件 | 内容 | 用途 |
-|---|---|---|
-| `weights/vae/kl_f8.ckpt` | 与原始 CompVis kl-f8 相容的完整 VAE 权重 | 初始化可训练 encoder/decoder |
-| `weights/perceptual/alexnet_imagenet.pth` | torchvision AlexNet ImageNet 完整 state_dict | 冻结图像特征网络 |
-
-也可通过 `--pretrained`、`--alexnet-weights` 指向已有文件。程序不会训练时联网下载，不会用随机特征代替真实 ImageNet 权重。仅靠文件名无法确认训练来源，请保留权重来源与说明；每次运行保存实际 SHA256。
-
-VAE 支持原始 state_dict、包含 `state_dict` 的 ckpt/pt，或相同 CompVis 键名的 safetensors。配置为 ch=128、ch_mult=[1,2,4,4]、每级2个残差块、4通道latent。RGB 首尾权重自动取平均；中间结构必须完全匹配，缺失或未知模型权重会拒绝加载。Diffusers 命名或整套 Stable Diffusion checkpoint 不能直接当作独立 VAE。若旧 ckpt 含不被安全读取器接受的对象，应在可信来源环境导出纯 state_dict，而不是关闭安全读取。
-
-AlexNet 可从 [torchvision 官方权重定义](https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.alexnet.html) 获取 `IMAGENET1K_V1`。下列操作是**显式下载**，仅在需要时手动运行：
-
-```python
-from pathlib import Path
-import torch
-from torchvision.models import AlexNet_Weights
-
-path = Path('weights/perceptual/alexnet_imagenet.pth')
-if path.exists():
-    raise FileExistsError(path)
-state = AlexNet_Weights.IMAGENET1K_V1.get_state_dict(progress=True, check_hash=True)
-path.parent.mkdir(parents=True, exist_ok=True)
-torch.save(state, path)
+```text
+weights/
+  vae/kl_f8_original.ckpt         官方 zip 中的 model.ckpt
+  perceptual/alexnet_imagenet.pth 官方 ImageNet AlexNet
+  downloads/kl-f8.zip             可重用的原始下载包
+  provenance.json                本机文件、来源与 SHA256
 ```
 
-当前没有确认用户逆散射/CSEM 实验实际使用的那一份 VAE checkpoint，所以项目没有自动代选并下载别的 VAE。请以所持真实权重为准。随机合成测试权重不在这里发布，也不能作为正式初始化。
+在项目根目录执行 `python prepare_pretrained.py` 自动准备；再次运行会校验并复用已存在文件。`python prepare_pretrained.py --check-only` 只检查本地文件，不联网。下载中断可以再次运行继续 `.part`；大小和 SHA256 一致后才发布目标文件。完整性不符合时停止，不覆盖已有最终文件。
+
+来源和已核实 SHA256 固定在 `configs/pretrained_sources.json`。原始 KL-f8 zip 约 1.01 GB，解压 checkpoint 约 1.10 GB（包括原训练附带状态），AlexNet 约 244 MB；加上训练 checkpoint 请预留数 GB 空间。
+
+- [CompVis 原项目](https://github.com/CompVis/latent-diffusion)
+- [官方原始 KL-f8 包](https://ommer-lab.com/files/latent-diffusion/kl-f8.zip)
+- [torchvision AlexNet 官方权重](https://download.pytorch.org/models/alexnet-owt-7be5be79.pth)
+
+训练只取完整 VAE state_dict，丢弃原损失网络/判别器，沿 RGB 取均值适配单通道。这里不对官方 checkpoint 做不透明修改。大权重、下载包和本机来源记录均不提交 Git；可将已校验的两个文件直接复制到服务器相同相对路径，再运行 `--check-only`。
+
+也可通过 `--pretrained` / `--alexnet-weights` 指向其他已有权重，但训练记录的 SHA256 和源文件名会随之改变；只有结构兼容并不意味着权重来源相同。不要给随机权重起一个官方文件名。
+
+官方 checkpoint 含旧 Lightning `ModelCheckpoint` 元数据标记；读取器以无行为的空类兼容该标记，仍保持 `weights_only=True`，不安装旧 Lightning、不启用任意 pickle 加载。该兼容路径已用真实官方文件验证。

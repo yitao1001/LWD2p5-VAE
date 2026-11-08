@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "verified_on": "2026-11-08",
+  "checksum_note": "SHA256 computed from the official publisher downloads, pinned for subsequent reproduction.",
+  "weights": {
+    "kl_f8": {
+      "identity": "CompVis original OpenImages KL-f8 (not SD ft-MSE/ft-EMA)",
+      "download": {
+        "path": "weights/downloads/kl-f8.zip",
+        "bytes": 1008808648,
+        "sha256": "5a244d63349fad20650f2090506bdfce9bfd91adec23fdb4f204c7105ba7ce55",
+        "url": "https://ommer-lab.com/files/latent-diffusion/kl-f8.zip"
+      },
+      "zip_member": "model.ckpt",
+      "file": {
+        "path": "weights/vae/kl_f8_original.ckpt",
+        "bytes": 1096193273,
+        "sha256": "c9890a9697c53045ad52965b33aadc3429d43a644c9af4c01ede3d551f3adf0a"
+      }
+    },
+    "alexnet": {
+      "identity": "torchvision AlexNet ImageNet1K V1",
+      "download": {
+        "path": "weights/perceptual/alexnet_imagenet.pth",
+        "bytes": 244408911,
+        "sha256": "7be5be791159472b1fbf3c69796f7cb30dca7ad8466c2df70058c37116cdee02",
+        "url": "https://download.pytorch.org/models/alexnet-owt-7be5be79.pth"
+      },
+      "file": {
+        "path": "weights/perceptual/alexnet_imagenet.pth",
+        "bytes": 244408911,
+        "sha256": "7be5be791159472b1fbf3c69796f7cb30dca7ad8466c2df70058c37116cdee02"
+      }
+    }
+  }
+}

@@ -9,14 +9,15 @@ in `references/compvis/autoencoder_original.py` for audit.
 
 `lwd_vae/finetuning/model.py` wraps these modules in a PyTorch module, adds LWD
 shape checks and FP32 posterior statistics under AMP, and replaces the
-Lightning lifecycle with an explicit training loop. LPIPS v0.1 calibration
-comes from the separately installed `lpips==0.1.4` package; AlexNet comes from
-torchvision with explicit user-supplied ImageNet weights. Their respective
-upstream licenses and weight terms apply. No pretrained weights are bundled.
+Lightning lifecycle with an explicit training loop. The current loss uses
+frozen torchvision AlexNet features with official ImageNet weights. The
+weight preparation script downloads from the original publishers; their
+respective licenses and weight terms apply. No pretrained weights are bundled
+in Git. Historical LPIPS code is retained only in the reference archive.
 
 The following describes the retained historical baseline:
 
-`lwd_vae/model.py` adapts the KL autoencoder topology, layer naming, residual
+`lwd_vae/legacy/model.py` adapts the KL autoencoder topology, layer naming, residual
 blocks, spatial attention, sampling operations, and Gaussian posterior from
 [CompVis/latent-diffusion](https://github.com/CompVis/latent-diffusion), specifically:
 

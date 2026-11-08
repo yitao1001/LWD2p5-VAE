@@ -1,4 +1,4 @@
-"""LWD 参考方案微调主循环。
+"""CSEM 论文路线的 LWD 微调主循环。
 
 阅读顺序：train() 的输入检查 → 网络/损失初始化 → 一个 epoch 的更新
 → 后验均值验证 → best/last 保存。测试与 OOD 数据不参与训练或选模型。
@@ -20,14 +20,13 @@ from ..dataset import LWDVAEDataset
 from ..runtime import (capture_rng, data_contract, load_checkpoint, restore_rng,
                        save_checkpoint, seed_everything, select_device, sha256_file, same_data_contract,
                        validate_data_contract, write_json)
-from ..vendor.compvis.ldm.modules.ema import LitEma
 from ..weights import load_pretrained
 from .config import missing_inputs, project_path, resolve_paths, validate_config
 from .losses import VAELoss, loss_coefficients
 from .model import CompVisKLF8, upstream_provenance
 
 
-CHECKPOINT_FORMAT = "lwd_vae_finetuning_v2"
+CHECKPOINT_FORMAT = "lwd_vae_csem_v3"
 
 
 def make_loader(dataset, settings, *, training, epoch=0):
@@ -43,9 +42,7 @@ def make_loader(dataset, settings, *, training, epoch=0):
 
 def make_optimizer(model, settings):
     common = {"lr": settings["learning_rate"], "weight_decay": settings["weight_decay"]}
-    if settings["name"] == "sgd":
-        return torch.optim.SGD(model.parameters(), momentum=settings["momentum"], **common)
-    return torch.optim.AdamW(model.parameters(), **common)
+    return torch.optim.SGD(model.parameters(), momentum=settings["momentum"], **common)
 
 
 def validate(model, loader, device, bounds):
@@ -78,7 +75,7 @@ def _write_history(path, rows):
 def train(config=None, *, device_name="auto", resume=None, output=None, dataset=None, epochs=None):
     """新训练传 config；续训仅传 resume，允许更换数据路径/输出路径和总轮数。
 
-    续训检查数据指纹，并从 checkpoint 恢复 VAE、损失网络、优化器、EMA
+    续训检查数据指纹，并从 checkpoint 恢复 VAE、损失网络、优化器
     和随机状态，因此不需要再次提供最初的外部权重文件。
     """
     if resume and config is not None:
@@ -89,7 +86,7 @@ def train(config=None, *, device_name="auto", resume=None, output=None, dataset=
             raise ValueError("Resume requires a new --output directory")
         model, saved = load_checkpoint(project_path(resume), device="cpu")
         if saved["format"] != CHECKPOINT_FORMAT:
-            raise ValueError("Use train_baseline.py to resume legacy baseline checkpoints")
+            raise ValueError("Only CSEM v3 checkpoints can resume here; old checkpoints remain readable for evaluation")
         c = deepcopy(saved["experiment_config"])
     elif config is not None:
         c = deepcopy(config)
@@ -152,14 +149,11 @@ def train(config=None, *, device_name="auto", resume=None, output=None, dataset=
                             restored_state=saved["loss_state"] if saved else None).to(device)
         optimizer = make_optimizer(model, c["optimizer"])
         scaler = torch.amp.GradScaler("cuda", enabled=device.type == "cuda" and settings["precision"] == "float16")
-        ema = LitEma(model, decay=c["ema"]["decay"]).to(device) if c["ema"]["decay"] else None
         feature_provenance = saved["feature_provenance"] if saved else {
             "kind": c["loss"]["feature"],
             "alexnet_path": str(paths["alexnet_weights"]) if c["loss"]["feature"] != "none" else None,
             "alexnet_sha256": sha256_file(paths["alexnet_weights"]) if c["loss"]["feature"] != "none" else None,
         }
-        if c["loss"]["feature"] == "lpips_alex":
-            feature_provenance["lpips_calibration_sha256"] = criterion.feature_network.calibration_sha256
         start, global_step, history = 0, 0, []
         best, significant_best, best_epoch, bad_epochs = math.inf, math.inf, -1, 0
         if saved:
@@ -168,10 +162,6 @@ def train(config=None, *, device_name="auto", resume=None, output=None, dataset=
                 raise ValueError("--epochs is the total target and must exceed completed epochs")
             optimizer.load_state_dict(saved["optimizer_state"])
             scaler.load_state_dict(saved["scaler_state"])
-            if ema is not None:
-                ema.load_state_dict(saved["ema_state"], strict=True)
-            elif saved["ema_state"] is not None:
-                raise ValueError("Checkpoint EMA settings disagree")
             global_step, history = saved["global_step"], deepcopy(saved["history"])
             best, best_epoch = saved["best_val_rmse"], saved["best_epoch"]
             significant_best, bad_epochs = saved["significant_best"], saved["bad_epochs"]
@@ -207,14 +197,17 @@ def train(config=None, *, device_name="auto", resume=None, output=None, dataset=
             "parameter_count": sum(p.numel() for p in model.parameters()),
             "posterior_shape": [c["model"]["latent_channels"], nz // 8, ny // 8],
             "device": str(device), "torch_version": str(torch.__version__), "python_version": platform.python_version(),
-            "selection_metric": "minimum validation RMSE in raw log10rho, posterior mode, after optional epoch EMA copyback",
+            "selection_metric": "minimum validation RMSE in raw log10rho, posterior mode, without clipping",
         })
+        initial_metrics = saved["initial_validation"] if saved else validate(
+            model, make_loader(val_ds, settings, training=False), device, train_ds.log10_bounds)
+        write_json(output_path / "initial_validation.json", initial_metrics)
         if inherited_best:
             save_checkpoint(checkpoint_dir / "best.pt", inherited_best)
         stopped_early = False
         amp_dtype = torch.float16 if settings["precision"] == "float16" else torch.bfloat16
 
-        # 4. 每轮：后验采样训练 → 可选 EMA → 后验均值验证 → 保存。
+        # 4. 每轮：后验采样训练 → 后验均值验证 → 保存。
         for epoch in range(start, settings["epochs"]):
             before = time.perf_counter()
             model.train()
@@ -241,9 +234,6 @@ def train(config=None, *, device_name="auto", resume=None, output=None, dataset=
                     sums[name] = sums.get(name, 0.0) + value.detach().item() * len(target)
                 count += len(target)
                 global_step += 1
-            if ema is not None:
-                ema(model)
-                ema.copy_to(model)
             metrics = validate(model, make_loader(val_ds, settings, training=False), device, train_ds.log10_bounds)
             score = metrics["val_rmse_log10"]
             is_best = score < best
@@ -265,13 +255,12 @@ def train(config=None, *, device_name="auto", resume=None, output=None, dataset=
                 "upstream_commit": upstream_provenance()["commit"], "model_spec": model.spec,
                 "model_state": model.state_dict(), "loss_state": criterion.state_dict(),
                 "optimizer_state": optimizer.state_dict(), "scaler_state": scaler.state_dict(),
-                "ema_state": ema.state_dict() if ema is not None else None,
                 "training_config": settings, "experiment_config": c, "data_contract": contract,
                 "epoch": epoch, "global_step": global_step, "history": history,
                 "best_val_rmse": best, "best_epoch": best_epoch,
                 "significant_best": significant_best, "bad_epochs": bad_epochs,
                 "rng_state": capture_rng(), "initialization": initialization,
-                "feature_provenance": feature_provenance,
+                "feature_provenance": feature_provenance, "initial_validation": initial_metrics,
             }
             if is_best:
                 save_checkpoint(checkpoint_dir / "best.pt", state)
@@ -284,6 +273,9 @@ def train(config=None, *, device_name="auto", resume=None, output=None, dataset=
         summary = {"completed_epochs": history[-1]["epoch"], "best_epoch": best_epoch + 1,
                    "best_val_rmse_log10": best, "stopped_early": stopped_early,
                    "best_checkpoint": "checkpoints/best.pt", "last_checkpoint": "checkpoints/last.pt",
+                   "initial_val_rmse_log10": initial_metrics["val_rmse_log10"],
+                   "improved_over_initial": best < initial_metrics["val_rmse_log10"],
+                   "purpose": c["purpose"],
                    "test_splits_used": False, "reference": c["reference"]}
         write_json(output_path / "summary.json", summary)
         return summary

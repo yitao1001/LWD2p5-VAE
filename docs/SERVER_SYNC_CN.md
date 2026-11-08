@@ -51,3 +51,18 @@ git pull --ff-only origin main
 ## 4. 关于测试数据
 
 测试用的检查数据同样不随 Git 传输。新检出目录可执行 `python generate_dataset.py --smoke --preview` 生成当前版本检查数据。完整历史兼容性测试还使用旧版检查数据，需保留原有数据或使用 `references/dataset_v1/` 与 `references/dataset_global_v2/` 中的归档生成器重建；仅检出源码后直接运行全部测试，并不代表这些历史数据已经存在。
+
+## 5. CSEM 路线重构后的训练位置（2026-11-08）
+
+当前入口为 `train_vae.py`，唯一正式配置为 `configs/vae_finetune_csem.json`。旧双路线配置和 AI 基线入口已归档；请不要继续使用本目录里早期实验遗留的根目录 `sdvae_model_finetune.py` 启动正式训练。
+
+服务器独立 Python 环境为项目内 `.venv`，PyTorch 2.6.0+cu124 / torchvision 0.21.0+cu124；已确认能识别 V100。它独立于原有 `lwd2p5` conda 环境。
+
+```bash
+cd /home/wytao/projects/VAE_LWD2p5Inversion
+.venv/bin/python prepare_pretrained.py --check-only
+.venv/bin/python train_vae.py --check-only --device cuda:0
+.venv/bin/python train_vae.py --device cuda:0 --output runs/csem_kl_f8_lwd_v1
+```
+
+模型权重不走 Git。首次可通过 `prepare_pretrained.py` 下载，或从本地复制已校验文件至 `weights/vae/` 和 `weights/perceptual/`，再执行校验。服务器独有的旧脚本与工具倾角/网格映射文件继续保留，未由此次主线重构覆盖。

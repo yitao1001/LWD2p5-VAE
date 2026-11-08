@@ -52,7 +52,7 @@ alpha 是相对全局竖直方向的断层面夹角；绝对值 20–45°，左�
 - `datasets/smoke_global_v2_2`：144 张流程检查样本及九类预览。
 - `datasets/smoke_global_v2_2/preview_fold_variants.png`：两类背斜各三个样例，选取强对比、参考层界不少于两条的样本以便观察几何；窗口可能裁掉部分层界，选择记录保存在同目录 JSON 中。
 - `datasets/lwd_global_v2_2`：正式 25,000 张的默认生成目标，需执行生成命令。
-- 三份 `configs/finetuning/` 配置以及基线入口均指向新版数据；运行目录后缀为 `global_v2_2`。
+- 正式训练配置为 `configs/vae_finetune_csem.json`，指向本数据集；测试配置位于 `configs/testing/`。
 - `references/dataset_global_v2_1/`：旧代码与配置原样备份；旧数据和 checkpoint 保留历史身份。
 
 ```bash

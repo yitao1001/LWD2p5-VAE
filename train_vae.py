@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""LWD 主训练入口：原始 CompVis kl-f8 + 两种独立的参考微调配置。"""
+"""LWD 主训练入口：通用 KL-f8 + CSEM 论文形式的微调损失。"""
 from lwd_vae.finetuning.cli import main
 
 

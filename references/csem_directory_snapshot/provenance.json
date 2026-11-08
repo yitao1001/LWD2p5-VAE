@@ -1,0 +1,16 @@
+{
+  "copied_on": "2026-11-08",
+  "status": "Local directory snapshot; not established as final CSEM publication code",
+  "files": [
+    {
+      "name": "sdvae_model_finetune.py",
+      "source_path": "/Users/yitao/Documents/2026LWD_Aramco/2026年3月4日_25DCSEM_代码发送/sdvae_model_finetune.py",
+      "sha256": "55aae39c148b75b926e9a1149584eab7d165294696baee7527c412625773dba1"
+    },
+    {
+      "name": "kl_f8.yaml",
+      "source_path": "/Users/yitao/Documents/2026LWD_Aramco/2026年3月4日_25DCSEM_代码发送/kl_f8.yaml",
+      "sha256": "5c914a8dee3cfeaf967feea7f8c451bc25e87fc619b6cf7aff55bc51cb52dc03"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-"""冻结图像网络：CSEM 风格特征 L2 与逆散射 LPIPS 是两种不同损失。
+"""CSEM 论文路线的冻结 AlexNet 特征 L2。
 
 所有 ImageNet 权重必须显式从本地读取，不在训练开始时自动下载。
 特征网络参数被冻结，但预测图像仍须能通过特征网络反向传播。
@@ -11,7 +11,6 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from ..runtime import sha256_file
 
 
 def _alexnet_features(weights_path: Path | None, restoring=False):
@@ -73,33 +72,10 @@ class AlexNetFeatureL2(FrozenFeatures):
         return torch.stack([F.mse_loss(a, b) for a, b in zip(predicted, expected)]).mean()
 
 
-class AlexNetLPIPS(FrozenFeatures):
-    """官方 LPIPS v0.1 校准头 + 本地 ImageNet AlexNet；输入仍为 [-1,1]。"""
-    def __init__(self, weights_path: Path | None, *, restoring=False):
-        super().__init__()
-        import lpips
-
-        # pnet_rand=True 仅禁止库隐式联网；下一步用本地权重替换全部 trunk。
-        # 续训时由 checkpoint 中的完整 loss_state 恢复 trunk 和校准头。
-        self.metric = lpips.LPIPS(net="alex", version="0.1", pnet_rand=True,
-                                  pretrained=True, eval_mode=True, verbose=False)
-        features = _alexnet_features(weights_path, restoring)
-        for index, (start, stop) in enumerate(((0, 2), (2, 5), (5, 8), (8, 10), (10, 12)), 1):
-            setattr(self.metric.net, f"slice{index}", nn.Sequential(*list(features.children())[start:stop]))
-        self.freeze()
-        calibration = Path(lpips.__file__).parent / "weights/v0.1/alex.pth"
-        self.calibration_sha256 = sha256_file(calibration)
-
-    def forward(self, prediction, target):
-        return self.metric(prediction.repeat(1, 3, 1, 1), target.repeat(1, 3, 1, 1), normalize=False).mean()
-
-
 def build_feature_loss(settings: dict, weights_path: Path | None, *, restoring=False):
     kind = settings["feature"]
     if kind == "none":
         return None
     if kind == "alexnet_l2":
         return AlexNetFeatureL2(weights_path, settings["feature_layers"], restoring=restoring)
-    if kind == "lpips_alex":
-        return AlexNetLPIPS(weights_path, restoring=restoring)
     raise ValueError(f"Unknown feature loss: {kind}")

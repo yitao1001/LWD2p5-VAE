@@ -250,4 +250,7 @@ class AutoencoderKL(nn.Module):
 
 
 # Historical import path retained for baseline scripts and checkpoints.
-from .weights import load_pretrained
+from ..weights import load_pretrained as _load_pretrained
+
+def load_pretrained(model, path):
+    return _load_pretrained(model, path, rgb_to_gray="sum")

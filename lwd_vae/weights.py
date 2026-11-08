@@ -1,10 +1,19 @@
 """共享的预训练权重读取与完整性检查；不会静默部分加载。"""
 from __future__ import annotations
 import hashlib
+import pickle
 from collections.abc import Mapping
 from pathlib import Path
 import torch
 from torch import Tensor, nn
+
+
+class _LegacyCheckpointMetadata:
+    """旧 Lightning callback 的无行为标记；仅为读取官方 KL-f8 的元数据。
+
+    官方包把 ModelCheckpoint 类作为 callbacks 字典的键保存。我们不导入
+    或执行旧 Lightning 类，只用空类代替该标记；仍使用 weights_only=True。
+    """
 
 
 def _load_weights_file(path: Path) -> Mapping:
@@ -15,11 +24,17 @@ def _load_weights_file(path: Path) -> Mapping:
             raise ImportError("Install safetensors to read a .safetensors checkpoint") from exc
         checkpoint = load_file(str(path), device="cpu")
     else:
-        # Do not silently enable arbitrary pickle deserialization for legacy files.
-        checkpoint = torch.load(path, map_location="cpu", weights_only=True)
+        legacy_marker = (_LegacyCheckpointMetadata,
+                         "pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint")
+        try:
+            with torch.serialization.safe_globals([legacy_marker]):
+                checkpoint = torch.load(path, map_location="cpu", weights_only=True)
+        except pickle.UnpicklingError as exc:
+            raise ValueError("Cannot safely read this checkpoint. Supply a tensor state_dict "
+                             "or the pinned official KL-f8 file; arbitrary pickle loading is disabled.") from exc
     if not isinstance(checkpoint, Mapping):
         raise ValueError("Checkpoint must be a tensor state dict or contain 'state_dict'")
-    state = checkpoint.get("state_dict", checkpoint)
+    state = checkpoint.get("model_state", checkpoint.get("state_dict", checkpoint))
     if not isinstance(state, Mapping):
         raise ValueError("Checkpoint 'state_dict' must be a mapping")
     return state
@@ -32,7 +47,7 @@ def _remove_wrapper_prefix(key: str) -> str:
     return key
 
 
-def load_pretrained(model: nn.Module, path: str | Path, *, rgb_to_gray: str = "sum") -> dict:
+def load_pretrained(model: nn.Module, path: str | Path, *, rgb_to_gray: str = "mean") -> dict:
     """Load a complete CompVis KL-f8 state, optionally adapting RGB boundaries.
 
     rgb_to_gray='mean' follows the CSEM paper and uploaded inverse-scattering
@@ -68,6 +83,8 @@ def load_pretrained(model: nn.Module, path: str | Path, *, rgb_to_gray: str = "s
             raise ValueError(f"Duplicate normalized checkpoint key: {key}")
         if not isinstance(value, Tensor):
             raise ValueError(f"Checkpoint weight {raw_key!r} is not a tensor")
+        if not torch.is_floating_point(value) or not torch.isfinite(value).all():
+            raise ValueError(f"Checkpoint weight {raw_key!r} must be finite floating point")
         target = expected[key]
         if value.shape != target.shape:
             if (key == "encoder.conv_in.weight" and value.ndim == 4

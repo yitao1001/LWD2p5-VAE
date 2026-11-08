@@ -14,3 +14,8 @@ reports/
 # Machine-specific secrets and configuration are never part of source sync.
 .env
 .env.*
+
+# Download archives, partial transfers and local weight provenance
+weights/downloads/
+weights/**/*.part
+weights/**/provenance.json
