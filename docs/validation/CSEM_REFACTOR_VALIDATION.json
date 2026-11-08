@@ -51,5 +51,17 @@
     "Numerical training settings and AlexNet feature reduction are explicit LWD choices, not recovered final-paper hyperparameters.",
     "Two optimizer updates and tiny evaluation subsets do not establish convergence or geological/EM accuracy.",
     "Original VAE model weights match completely; auxiliary network parameter counts do not reproduce the paper total."
-  ]
+  ],
+  "server_validation": {
+    "record": "docs/validation/CSEM_SERVER_PRETRAINED_VALIDATION.json",
+    "tests_passed": 43,
+    "tests_log": "docs/validation/20261108_csem_v3_server_tests.txt",
+    "gpu": "Tesla V100-PCIE-32GB",
+    "physical_gpu_index": 3,
+    "optimizer_updates": 2,
+    "initial_validation_rmse_log10": 0.5926828075631655,
+    "after_two_updates_validation_rmse_log10": 0.5834550881074746,
+    "same_official_weight_hash": true,
+    "sync_method": "Git bundle of the commit already pushed to origin; server direct HTTPS pull failed with GnuTLS -110."
+  }
 }
