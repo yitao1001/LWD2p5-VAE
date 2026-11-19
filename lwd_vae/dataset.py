@@ -87,15 +87,11 @@ class LWDVAEDataset:
         self.return_metadata = bool(return_metadata)
         with (self.root / "manifest.json").open(encoding="utf-8") as handle:
             self.manifest = json.load(handle)
-        version = self.manifest.get("schema_version")
-        if version not in (1, 2):
-            raise ValueError("unsupported manifest schema_version; expected 1 (legacy) or 2")
+        if self.manifest.get("schema_version") != 3:
+            raise ValueError("unsupported manifest schema_version; expected 3 (lwd_v2 datasets from generate_dataset.py)")
         self.config = self.manifest["config"]
-        # v1 同样采用地质 y/z 坐标，但含随机地层倾角；保留旧数据可读性。
-        self.coordinate_frame = self.manifest.get("coordinate_frame", "global_aligned_yz")
-        if self.coordinate_frame != "global_aligned_yz" or (version == 2 and (
-                self.manifest.get("coordinate_frame") != "global_aligned_yz"
-                or self.config.get("coordinate_frame") != "global_aligned_yz")):
+        self.coordinate_frame = self.manifest.get("coordinate_frame")
+        if self.coordinate_frame != "global_aligned_yz" or self.config.get("coordinate_frame") != "global_aligned_yz":
             raise ValueError("Expected matching global_aligned_yz coordinate frame; no implicit rotation")
         grid = self.config["grid"]
         self.nz, self.ny = int(grid["nz"]), int(grid["ny"])

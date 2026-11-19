@@ -14,9 +14,9 @@
 | 像素项 | L2 重构 | 逐元素 MSE；论文未说明求和/均值的代码实现 |
 | 特征项 | 冻结预训练图像网络，例如 AlexNet；特征 L2 | ImageNet AlexNet 五层 ReLU MSE，等权平均；具体层与标准化为显式选择 |
 | KL | 后验相对标准正态的正则 | 每样本 latent 元素求和，再对 batch 平均 |
-| 优化器、系数、调度 | 现有论文材料不足以恢复完整设置 | SGD、lr=1e-4、γ=1、β=1e-5、10 epochs 为 LWD 初始配置 |
+| 优化器、系数、调度 | 现有论文材料不足以恢复完整设置 | SGD、lr=1e-3 余弦衰减到 1e-5、γ=1、β 见配置、float16、10 epochs；lr 与 γ 由 lwd_v1 小规模筛选选定（`docs/validation/20261108_lwd_v1_pilot.json`），β 由 lwd_v2 筛选复核 |
 | EMA / LPIPS / TV | 论文损失公式不能支持直接加入这些操作 | 正式路线不含这些附加项 |
-| 训练数据 | CSEM 地质模型先验 | 用当前 LWD v2.2 的 48×120 全局网格，保留 1 inch 单元 |
+| 训练数据 | CSEM 地质模型先验，图像即反演网格（`VAE_generate_dataset.py` 在反演单元中心取值） | LWD `lwd_v4`：图像即计划中的正方形反演网格，1 inch、128×128，F 顺序展平即反演参数顺序 |
 | 验证与选模 | 作者实现细节未完全公开 | 固定 val，后验均值重构，按原始 log10ρ RMSE 选 best |
 | 冻结参数统计 | 论文另报约 17M 非训练参数 | 本实现仅保留所选 AlexNet 卷积特征，冻结参数 2,469,696；不实例化原 checkpoint 的无用损失/判别器子网，不能宣称与论文参数统计逐项一致 |
 
@@ -32,17 +32,14 @@
 
 目录脚本原样保存在 [references/csem_directory_snapshot](../references/csem_directory_snapshot/README.md)，只用于审计，不作为当前训练入口。用户另传的逆散射材料仍在 `references/inverse_scattering/`，来源保持分开。
 
-## 本次整理
+## 当前整理（2026-11-08）
 
-- 正式配置收敛到 `configs/vae_finetune_csem.json`，schema_version=3。
-- 旧两路线配置、训练实现和文档快照归档到 `references/archive/finetuning_v2/`。
-- 旧 AI 基线模型与训练器在 `lwd_vae/legacy/`；原入口、配置及旧测试在 `references/archive/baseline/`。
-- 过去根目录散落的验证 JSON 移到 `docs/validation/archive/`，历史结果保留。
-- 当前入口只产生 `lwd_vae_csem_v3` checkpoint；独立评估继续读取旧 v1/v2 checkpoint，续训只接受 v3。
-- 地质生成代码、配置、正式数据和报告没有因训练重构而改变。
+- 正式配置收敛到 `configs/vae_finetune_csem.json`，schema_version=3；只产生、读取和续训 `lwd_vae_csem_v3` checkpoint。
+- 旧 AI 基线、双路线微调实现、旧数据生成器副本和历史验证记录已删除，可在 Git 历史中找回；未曾提交的 ver9 映射草案及旧数据集、旧训练输出也已删除，不能从 Git 恢复。
+- 数据集命名从 `lwd_v1` 重新开始；`lwd_v2` 改为 1 inch、128×128 正方形全局窗口和组合式地质生成器（地层倾角、每层独立岩性、断层、尖灭、结核、流体界面等），见 [DATASET_V4_CN.md](DATASET_V4_CN.md)；`lwd_v3` 只把层厚中位数改为 1–8 ft；`lwd_v4` 去掉钙质结核。
 
 ## 验证边界
 
 自动测试检查原版网络一致性、权重完整性/通道转换、三项损失数值、冻结特征的输入梯度、数据和坐标约定、确定性续训、checkpoint 评价和 latent 梯度。测试中用随机合成权重的部分仅验证逻辑。
 
-官方权重的加载与短流程微调记录独立写入 `docs/validation/CSEM_REFACTOR_VALIDATION.json`。短流程成功不代表正式数据训练已收敛，也不代表 LWD 电磁响应或反演已经验证有效。
+本版测试与官方权重前向检查记录在 `docs/validation/`。短流程成功不代表正式数据训练已收敛，也不代表 LWD 电磁响应或反演已经验证有效。

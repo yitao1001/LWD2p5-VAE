@@ -9,13 +9,13 @@
       "Original CompVis KL-f8 OpenImages checkpoint is selected; identity with the authors private initialization is not established.",
       "Elementwise pixel MSE; ImageNet-normalized AlexNet ReLU [1,4,7,9,11] feature MSE averaged across layers; KL summed per sample then batch mean.",
       "feature_weight=1, kl_weight=1e-5, SGD lr=1e-4 momentum=0.9 weight_decay=5e-4 and 10 epochs are LWD starting settings, not recovered CSEM final hyperparameters.",
-      "No LPIPS calibration, TV/gradient loss, discriminator, EMA or weight schedule in this training route.",
-      "LWD retains global 48x120 one-inch grid and manifest train/val splits; best model selected by validation log10rho RMSE.",
+      "No LPIPS calibration, TV/gradient loss, discriminator, EMA or loss-weight schedule; the learning rate follows optimizer.schedule.",
+      "LWD image grid is the planned square inversion grid of datasets lwd_v2-lwd_v4: 128x128 cells of 1 inch (10.67 ft), global y-z frame centred on the window; F-order flattening (z fastest) is the inversion parameter order; manifest train/val splits; best model selected by validation log10rho RMSE.",
       "This full-size pretrained check uses only two training and two validation samples for one epoch; it verifies execution, not convergence."
     ]
   },
   "paths": {
-    "dataset": "datasets/smoke_global_v2_2",
+    "dataset": "datasets/lwd_v4_smoke",
     "output": "runs/validation_pretrained_csem_v3",
     "vae_weights": "weights/vae/kl_f8_original.ckpt",
     "alexnet_weights": "weights/perceptual/alexnet_imagenet.pth"
@@ -54,7 +54,9 @@
     "name": "sgd",
     "learning_rate": 0.0001,
     "momentum": 0.9,
-    "weight_decay": 0.0005
+    "weight_decay": 0.0005,
+    "schedule": "constant",
+    "min_learning_rate": null
   },
   "training": {
     "seed": 20261104,
@@ -67,7 +69,8 @@
     "patience": 0,
     "min_delta": 0.0,
     "max_train_samples": 2,
-    "max_val_samples": 2
+    "max_val_samples": 2,
+    "log_every_steps": 1
   },
   "purpose": "finetune"
 }

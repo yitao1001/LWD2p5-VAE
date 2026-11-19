@@ -1,0 +1,204 @@
+{
+  "date": "2026-11-08",
+  "scope": "lwd_v1 data on the ver8 inversion grid; no optimizer update, no EM solve",
+  "ver8_grid_check": {
+    "command": "/home/wytao/miniconda3/envs/lwd2p5/bin/python check_ver8_grid.py",
+    "compatible": true,
+    "checks": {
+      "shape_nz_ny": true,
+      "y_edges": true,
+      "z_edges": true,
+      "fortran_parameter_order": true
+    },
+    "ver8_config": "/home/wytao/projects/lwd2p5-Hyy-Hzz-Hyz-Hzy-pc_20260825/configs/RealTool/config_dual_frequency_ver8_joint_wl2.yaml",
+    "ver8_inversion": {
+      "nz": 96,
+      "ny": 256,
+      "step_inch": 0.5,
+      "parameter_count": 24576,
+      "bounds_ft": {
+        "y_min": 249.9375,
+        "y_max": 260.6041666666667,
+        "z_min": 1778.0208333333333,
+        "z_max": 1782.0208333333333
+      },
+      "bounds_relative_to_origin_ft": {
+        "y": [
+          -5.0625,
+          5.604166666666686
+        ],
+        "z": [
+          -1.9791666666667425,
+          2.0208333333332575
+        ]
+      },
+      "coordinate_anchor": "first_rx"
+    }
+  },
+  "dataset": {
+    "path": "datasets/lwd_v1",
+    "generator_version": "1.0.0",
+    "manifest_sha256": "4132bdea4610b0adfb754c729f424ad06e0b9014cec011094ecefc72dee77f50",
+    "config_sha256": "db79701b20cbcaa91cf0d0ee910b851be00f15b2c9efe41c07900d1d9985fe4c",
+    "generator_sha256": "cab419f441adc62b21238a9459696145c4973dad80765f97223f9f96123f7815",
+    "splits": {
+      "train": {
+        "count": 20000,
+        "family_counts": {
+          "faulted": 3000,
+          "layered": 5000,
+          "faulted_anticline": 2000,
+          "homogeneous": 1000,
+          "curved": 2000,
+          "pinchout": 2000,
+          "unconformity": 1000,
+          "fluid_contact": 1000,
+          "anticline": 3000
+        },
+        "contrast_counts": {
+          "strong": 12437,
+          "none": 1000,
+          "weak": 6563
+        },
+        "rejected_draws": 54,
+        "min_log10rho": -0.301023006439209,
+        "max_log10rho": 2.3010165691375732
+      },
+      "val": {
+        "count": 2000,
+        "family_counts": {
+          "fluid_contact": 100,
+          "faulted": 300,
+          "unconformity": 100,
+          "layered": 500,
+          "curved": 200,
+          "pinchout": 200,
+          "homogeneous": 100,
+          "anticline": 300,
+          "faulted_anticline": 200
+        },
+        "contrast_counts": {
+          "strong": 1235,
+          "weak": 665,
+          "none": 100
+        },
+        "rejected_draws": 3,
+        "min_log10rho": -0.3001295328140259,
+        "max_log10rho": 2.300325632095337
+      },
+      "test": {
+        "count": 2000,
+        "family_counts": {
+          "curved": 200,
+          "layered": 500,
+          "anticline": 300,
+          "faulted": 300,
+          "faulted_anticline": 200,
+          "homogeneous": 100,
+          "pinchout": 200,
+          "unconformity": 100,
+          "fluid_contact": 100
+        },
+        "contrast_counts": {
+          "weak": 646,
+          "strong": 1254,
+          "none": 100
+        },
+        "rejected_draws": 4,
+        "min_log10rho": -0.30042845010757446,
+        "max_log10rho": 2.300996780395508
+      },
+      "ood_contrast": {
+        "count": 1000,
+        "family_counts": {
+          "pinchout": 105,
+          "anticline": 158,
+          "layered": 263,
+          "unconformity": 53,
+          "faulted_anticline": 105,
+          "curved": 105,
+          "faulted": 158,
+          "fluid_contact": 53
+        },
+        "contrast_counts": {
+          "ood": 1000
+        },
+        "rejected_draws": 3,
+        "min_log10rho": -0.3002382516860962,
+        "max_log10rho": 2.3008666038513184
+      }
+    }
+  },
+  "real_weight_preflight": {
+    "command": ".venv/bin/python train_vae.py --check-only --device cuda:3",
+    "device": "cuda:3",
+    "splits": {
+      "train": {
+        "samples": 20000,
+        "shape": [
+          1,
+          96,
+          256
+        ]
+      },
+      "val": {
+        "samples": 2000,
+        "shape": [
+          1,
+          96,
+          256
+        ]
+      }
+    },
+    "posterior_shape": [
+      4,
+      12,
+      32
+    ],
+    "trainable_vae_parameters": 83649253,
+    "frozen_feature_parameters": 2469696,
+    "sample_losses": {
+      "loss": 0.5345933437347412,
+      "pixel": 0.1392219066619873,
+      "feature": 0.1192447692155838,
+      "kl": 27612.666015625,
+      "kl_per_latent": 17.97699737548828,
+      "weighted_feature": 0.1192447692155838,
+      "weighted_kl": 0.2761266529560089
+    },
+    "status": "weights, dataset and forward checked; no optimizer update",
+    "vae_weights_sha256": "c9890a9697c53045ad52965b33aadc3429d43a644c9af4c01ede3d551f3adf0a",
+    "matched_tensor_count": 248,
+    "adapted": [
+      {
+        "key": "encoder.conv_in.weight",
+        "operation": "mean_rgb_input_channels"
+      },
+      {
+        "key": "decoder.conv_out.weight",
+        "operation": "mean_rgb_output_channels"
+      },
+      {
+        "key": "decoder.conv_out.bias",
+        "operation": "mean_rgb_output_channels"
+      }
+    ],
+    "note": "sample_losses are for one training image at initialization (posterior mean); weighted_kl exceeds pixel and feature terms because KL is summed over 1536 latents"
+  },
+  "throughput": {
+    "device": "Tesla V100-PCIE-32GB (cuda:3)",
+    "batch_size": 4,
+    "precision": "float32",
+    "image": [
+      1,
+      96,
+      256
+    ],
+    "seconds_per_training_step": 0.2417,
+    "peak_allocated_GiB": 4.99,
+    "formal_budget_steps": 50000,
+    "estimated_training_hours_excluding_validation": 3.36,
+    "method": "40 timed steps after 5 warm-up steps, synthetic inputs, real KL-f8 and AlexNet weights; cudnn.deterministic not set"
+  },
+  "unit_tests": "docs/validation/20261108_lwd_v1_tests.txt (45 tests, OK)"
+}

@@ -39,8 +39,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--dataset", type=Path, required=True, help="generated dataset directory with manifest.json")
     parser.add_argument("--checkpoint", type=Path, required=True, help="trusted local checkpoint from train_vae.py")
     parser.add_argument("--output", type=Path, required=True, help="new directory; existing directories are refused")
-    parser.add_argument("--splits", nargs="+", default=None, choices=["val", "test", "ood_dip", "ood_contrast"],
-                        help="Default: test and available OOD splits from manifest; ood_dip is legacy-only")
+    parser.add_argument("--splits", nargs="+", default=None, choices=["val", "test", "ood_contrast", "ood_dip"],
+                        help="Default: test and, if present, ood_contrast and ood_dip")
     parser.add_argument("--device", default="auto", help="auto/cpu/mps/cuda/cuda:N")
     parser.add_argument("--batch-size", type=_positive, default=32)
     parser.add_argument("--workers", type=_nonnegative, default=0)
@@ -50,14 +50,15 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _gallery_indices(metadata: list[dict[str, Any]], count: int, limit: int = 9) -> list[int]:
+def _gallery_indices(metadata: list[dict[str, Any]], count: int, limit: int = 10) -> list[int]:
+    """First sample carrying each tag (planar, fault, pinchout, ...), then evenly spaced fill."""
     selected: list[int] = []
-    families: set[str] = set()
+    seen: set[str] = set()
     for index, record in enumerate(metadata[:count]):
-        family = str(record.get("family", "unknown"))
-        if family not in families:
+        new = [tag for tag in record.get("tags", []) if tag not in seen and tag not in ("trend", "gradational")]
+        if new and index not in selected:
             selected.append(index)
-            families.add(family)
+            seen.update(record.get("tags", []))
         if len(selected) == limit:
             return sorted(selected)
     for index in np.linspace(0, count - 1, min(count, limit), dtype=int).tolist():
@@ -90,7 +91,7 @@ def _plot_gallery(
     cmap = plt.get_cmap("viridis").copy()
     cmap.set_under("#051b44")
     cmap.set_over("#ff00a8")
-    fig, axes = plt.subplots(len(indices), 3, figsize=(15, 2.65 * len(indices)), squeeze=False, constrained_layout=True)
+    fig, axes = plt.subplots(len(indices), 3, figsize=(12, 4.0 * len(indices)), squeeze=False, constrained_layout=True)
     physical_image = error_image = None
     for row_index, index in enumerate(indices):
         truth, predicted = images[index]
@@ -102,7 +103,7 @@ def _plot_gallery(
             ax.set_ylabel("z (ft, down)")
             if column == 0:
                 physical_image = image
-                ax.set_title(f"Truth | {record['sample_id']} | {record['family']}", fontsize=9)
+                ax.set_title(f"Truth | {record['sample_id']} | {record['tags'].replace(';', ', ')}", fontsize=9)
             elif column == 1:
                 ax.set_title(f"Posterior mean | RMSE={record['rmse_log10']:.4f}", fontsize=9)
             else:
@@ -110,17 +111,17 @@ def _plot_gallery(
                 ax.set_title(f"Prediction - truth | outside bounds={record['out_of_bounds_fraction']:.2%}", fontsize=9)
     fig.colorbar(physical_image, ax=axes[:, :2].ravel().tolist(), location="bottom", fraction=0.025, pad=0.02, extend="both", label="log10(rho / (ohm m)); shared dataset scale")
     fig.colorbar(error_image, ax=axes[:, 2].ravel().tolist(), location="bottom", fraction=0.025, pad=0.02, label="log10 resistivity error; shared gallery scale")
-    fig.suptitle(f"{dataset.split}: deterministic VAE reconstructions (one example per available family)", fontsize=12)
+    fig.suptitle(f"{dataset.split}: deterministic VAE reconstructions (first example of each geological tag)", fontsize=12)
     fig.savefig(destination, dpi=140)
     plt.close(fig)
 
 
 def evaluation_splits(dataset_root: Path, requested: list[str] | None) -> list[str]:
-    """新数据默认 test/ood_contrast；旧数据仍可评估已有的 ood_dip。"""
+    """默认评估 test 与非空的 ood_contrast、ood_dip；val 只在显式指定时评估。"""
     manifest = json.loads((Path(dataset_root).expanduser() / "manifest.json").read_text())
     available = manifest["splits"]
     selected = list(requested) if requested is not None else [
-        name for name in ("test", "ood_dip", "ood_contrast")
+        name for name in ("test", "ood_contrast", "ood_dip")
         if name in available and available[name]["count"] > 0]
     if not selected or len(set(selected)) != len(selected):
         raise ValueError("Select at least one split, without duplicates")
@@ -203,7 +204,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     for local_index, metric in enumerate(batch_rows):
                         index = start + local_index
                         metadata = dataset.metadata[index]
-                        row = {"index": index, "sample_id": metadata.get("sample_id", f"{split}:{index:08d}"), "family": metadata.get("family", "unknown"), "contrast_class": metadata.get("parameters", {}).get("contrast_class", "unknown"), **metric}
+                        row = {"index": index, "sample_id": metadata.get("sample_id", f"{split}:{index:08d}"),
+                               "tags": ";".join(metadata.get("tags", [])),
+                               "contrast_class": metadata.get("contrast_class", "unknown"),
+                               "dip_class": metadata.get("dip_class", "unknown"),
+                               "span_log10": metadata.get("span_log10"), **metric}
                         rows.append(row)
                         if index in gallery_indices:
                             gallery[index] = (truth[local_index, 0].copy(), prediction[local_index, 0].copy())

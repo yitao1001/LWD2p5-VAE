@@ -48,7 +48,7 @@ class AlexNetFeatureL2(FrozenFeatures):
         super().__init__()
         features = _alexnet_features(weights_path, restoring)
         self.layers = tuple(layers)
-        # 截到最后一个所选 ReLU，跳过最后的分类池化；支持 48x120。
+        # 截到最后一个所选 ReLU，跳过最后的分类池化；支持 128x128 及矩形输入（两边 >= 32）。
         self.features = features[: max(layers) + 1]
         self.register_buffer("image_mean", torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1))
         self.register_buffer("image_std", torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1))

@@ -1,0 +1,54 @@
+{
+  "record": "lwd_v2 kl_weight pilots",
+  "date": "2026-11-09",
+  "protocol": "datasets/lwd_v2 first 4000 train / 500 val, 2 epochs, batch 4, SGD lr 1e-3 cosine to 1e-5 over the 2 epochs, gamma=1, float16, cuda:3; checkpoints deleted, logs in runs/pilot_20261109",
+  "runs": {
+    "D1_beta2.5e-6": {
+      "kl_weight": 2.5e-06,
+      "initial_val_rmse_log10": 0.5748322285710015,
+      "val_rmse_log10_by_epoch": [
+        0.06642,
+        0.06288
+      ],
+      "final_groups": {
+        "high": 0.08267,
+        "moderate": 0.05298,
+        "none": 0.0299,
+        "weak": 0.02569
+      },
+      "final_train_kl_per_latent": 4.474,
+      "final_train_pixel_mse": 0.0011056645911521627,
+      "final_learning_rate": 1.0000610681646757e-05
+    },
+    "D2_beta5e-6": {
+      "kl_weight": 5e-06,
+      "initial_val_rmse_log10": 0.5748322285710015,
+      "val_rmse_log10_by_epoch": [
+        0.06331,
+        0.06171
+      ],
+      "final_groups": {
+        "high": 0.08247,
+        "moderate": 0.05007,
+        "none": 0.02752,
+        "weak": 0.02483
+      },
+      "final_train_kl_per_latent": 3.319,
+      "final_train_pixel_mse": 0.001110999883727345,
+      "final_learning_rate": 1.0000610681646757e-05
+    }
+  },
+  "selection": {
+    "rule": "largest kl_weight whose pilot best val RMSE is within 10% of the best pilot",
+    "best_val_rmse_log10": {
+      "2.5e-06": 0.06287822631002483,
+      "5e-06": 0.06171166202202272
+    },
+    "chosen_kl_weight": 5e-06
+  },
+  "speed": "about 9.5 step/s at 128x128 on V100 (0.105 s/step)",
+  "caveats": [
+    "2,000 steps only; the 1.9% RMSE difference between the two betas is within run-to-run noise, so the choice mainly follows the rule (larger beta, more regular latent: KL per latent 3.3 vs 4.5).",
+    "lwd_v2 is much harder than lwd_v1 (pilot RMSE 0.062 vs 0.026 at the same budget): thin interbeds, 2-4 lithologies, faults and contacts; the high-contrast group dominates the error."
+  ]
+}

@@ -83,7 +83,7 @@ class FinetuningTests(unittest.TestCase):
         result = subprocess.run([sys.executable, str(ROOT / 'train_vae.py'), '--print-config'],
                                 cwd=self.work, capture_output=True, text=True, check=True)
         actual = json.loads(result.stdout)
-        self.assertEqual(actual['resolved_paths']['dataset'], str(ROOT / 'datasets/lwd_global_v2_2'))
+        self.assertEqual(actual['resolved_paths']['dataset'], str(ROOT / 'datasets/lwd_v4'))
         bad = deepcopy(config)
         bad['loss']['misspelled_weight'] = 1
         with self.assertRaises(ValueError):
@@ -112,7 +112,7 @@ class FinetuningTests(unittest.TestCase):
         config['initialization']['mode'] = 'pretrained'
         config['paths']['vae_weights'] = str(self.vae_path)
         report = check_setup(config)
-        self.assertEqual(report['posterior_shape'], [4, 6, 15])
+        self.assertEqual(report['posterior_shape'], [4, 16, 16])
         self.assertGreater(report['initialization']['matched_tensor_count'], 0)
         self.assertFalse(resolve_paths(config)['output'].exists())
         config['paths']['vae_weights'] = str(self.alex_path)
@@ -264,7 +264,12 @@ class FinetuningTests(unittest.TestCase):
 
     def test_csem_training_checkpoint_evaluation_and_latent_gradient(self):
         config = self.make_config('csem_integration', 'alexnet_l2')
+        config['training']['log_every_steps'] = 1
         train(config, device_name='cpu')
+        header = (self.work / 'csem_integration/logs/history.csv').read_text().splitlines()[0].split(',')
+        self.assertTrue(any(name.startswith('val_rmse_log10_') for name in header))
+        initial = json.loads((self.work / 'csem_integration/initial_validation.json').read_text())
+        self.assertTrue(any(name.startswith('val_rmse_log10_') for name in initial))
         checkpoint = self.work / 'csem_integration/checkpoints/best.pt'
         wrapper = LWDVAE(checkpoint, device='cpu')
         with LWDVAEDataset(self.data, 'test', as_torch=True) as dataset:
@@ -273,6 +278,7 @@ class FinetuningTests(unittest.TestCase):
         latent = wrapper.encode(raw).mode().detach().requires_grad_(True)
         decoded = wrapper.decode(latent)
         vector = wrapper.decode_inversion_vector(latent)
+        self.assertEqual(tuple(vector.shape), (1, 128 * 128))  # 正方形反演网格的参数个数与 F 顺序
         np.testing.assert_array_equal(vector.detach().numpy()[0], decoded.detach().numpy()[0, 0].ravel(order='F'))
         vector.square().mean().backward()
         self.assertTrue(torch.isfinite(latent.grad).all())
@@ -282,7 +288,62 @@ class FinetuningTests(unittest.TestCase):
             output=self.work / 'evaluation', splits=None, device='cpu', batch_size=2,
             workers=0, max_samples=2, save_reconstructions=True, no_plots=True))
         self.assertTrue(np.isfinite(report['splits']['test']['overall']['rmse_log10']))
-        self.assertEqual(set(report['splits']), {'test', 'ood_contrast'})
+        self.assertEqual(set(report['splits']), {'test', 'ood_contrast', 'ood_dip'})
+        self.assertIn('by_tag', report['splits']['test'])
+        self.assertIn('by_dip_class', report['splits']['ood_dip'])
+
+    def test_validation_reports_contrast_groups_consistently(self):
+        from lwd_vae.finetuning.trainer import make_loader, validate, validation_groups
+        model = CompVisKLF8(self.config['model'])
+        settings = dict(self.config['training'], max_val_samples=6)
+        with LWDVAEDataset(self.data, 'val', as_torch=True) as dataset:
+            groups = validation_groups(dataset, settings)
+            metrics = validate(model, make_loader(dataset, settings, training=False), 'cpu', dataset.log10_bounds, groups)
+        labels = sorted(set(groups))
+        self.assertEqual(len(groups), 6)
+        self.assertEqual(sorted(k for k in metrics if k.startswith('val_rmse_log10_')),
+                         [f'val_rmse_log10_{g}' for g in labels])
+        # 各组样本网格相同：按样本数加权的组 MSE 等于总体 MSE。
+        pooled = sum(groups.count(g) * metrics[f'val_rmse_log10_{g}'] ** 2 for g in labels) / len(groups)
+        self.assertAlmostEqual(pooled, metrics['val_rmse_log10'] ** 2, places=10)
+        with self.assertRaisesRegex(ValueError, 'group labels'):
+            validate(model, make_loader(dataset, settings, training=False), 'cpu', dataset.log10_bounds, groups[:-1])
+
+    def test_optimizer_choices(self):
+        from lwd_vae.finetuning.trainer import make_optimizer
+        config = load_config()
+        self.assertIsInstance(make_optimizer(nn.Linear(2, 2), config['optimizer']), torch.optim.SGD)
+        config['optimizer'].update(name='adamw', momentum=None)
+        validate_config(config)
+        self.assertIsInstance(make_optimizer(nn.Linear(2, 2), config['optimizer']), torch.optim.AdamW)
+        config['optimizer']['momentum'] = 0.9
+        with self.assertRaisesRegex(ValueError, 'momentum to null'):
+            validate_config(config)
+        config['optimizer'].update(name='adam', momentum=None)
+        with self.assertRaises(ValueError):
+            validate_config(config)
+        config = load_config()
+        del config['training']['log_every_steps']
+        with self.assertRaises(ValueError):
+            validate_config(config)
+
+    def test_learning_rate_schedule(self):
+        from lwd_vae.finetuning.trainer import learning_rate_at
+        config = load_config()
+        settings = config['optimizer']
+        self.assertEqual(settings['schedule'], 'cosine')
+        self.assertAlmostEqual(learning_rate_at(settings, 0, 100), settings['learning_rate'])
+        self.assertAlmostEqual(learning_rate_at(settings, 50, 100), (settings['learning_rate'] + settings['min_learning_rate']) / 2)
+        self.assertAlmostEqual(learning_rate_at(settings, 100, 100), settings['min_learning_rate'])
+        rates = [learning_rate_at(settings, step, 100) for step in range(101)]
+        self.assertTrue(all(a >= b for a, b in zip(rates, rates[1:])))
+        constant = dict(settings, schedule='constant', min_learning_rate=None)
+        self.assertEqual(learning_rate_at(constant, 70, 100), settings['learning_rate'])
+        for bad in ({'schedule': 'step'}, {'schedule': 'constant'}, {'min_learning_rate': 1.0}):
+            broken = load_config()
+            broken['optimizer'].update(bad)
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                validate_config(broken)
 
     def test_missing_or_partial_weights_fail_before_output_creation(self):
         config = self.make_config('must_not_exist')
@@ -296,21 +357,17 @@ class FinetuningTests(unittest.TestCase):
             train(config, device_name='cpu')
         self.assertFalse(resolve_paths(config)['output'].exists())
 
-    def test_old_checkpoints_remain_readable_for_evaluation(self):
-        from lwd_vae.legacy.model import AutoencoderKL
-        from lwd_vae.finetuning.model import upstream_provenance
-        for version, model in (
-            ('lwd_vae_training_v1', AutoencoderKL(self.config['model'])),
-            ('lwd_vae_finetuning_v2', CompVisKLF8(self.config['model'])),
-        ):
+    def test_only_current_checkpoint_format_is_accepted(self):
+        model = CompVisKLF8(self.config['model'])
+        for version in ('lwd_vae_training_v1', 'lwd_vae_finetuning_v2'):
             checkpoint = self.work / f'{version}.pt'
             torch.save({'format': version, 'model_state': model.state_dict(),
                 'model_spec': self.config['model'], 'data_contract': {}, 'epoch': 0,
                 'training_config': {}, 'model_backend': 'compvis_original_core',
                 'upstream_commit': upstream_provenance()['commit']}, checkpoint)
-            restored, _ = load_checkpoint(checkpoint)
-            self.assert_state_equal(restored.state_dict(), model.state_dict())
-            with self.assertRaisesRegex(ValueError, 'Only CSEM v3'):
+            with self.assertRaisesRegex(ValueError, 'lwd_vae_csem_v3'):
+                load_checkpoint(checkpoint)
+            with self.assertRaisesRegex(ValueError, 'lwd_vae_csem_v3'):
                 train(resume=checkpoint, output=self.work / f'resume_{version}')
 
 

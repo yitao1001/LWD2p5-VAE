@@ -13,22 +13,7 @@ Lightning lifecycle with an explicit training loop. The current loss uses
 frozen torchvision AlexNet features with official ImageNet weights. The
 weight preparation script downloads from the original publishers; their
 respective licenses and weight terms apply. No pretrained weights are bundled
-in Git. Historical LPIPS code is retained only in the reference archive.
-
-The following describes the retained historical baseline:
-
-`lwd_vae/legacy/model.py` adapts the KL autoencoder topology, layer naming, residual
-blocks, spatial attention, sampling operations, and Gaussian posterior from
-[CompVis/latent-diffusion](https://github.com/CompVis/latent-diffusion), specifically:
-
-- `ldm/modules/diffusionmodules/model.py`
-- `ldm/modules/distributions/distributions.py`
-- `ldm/models/autoencoder.py`
-
-The adaptation removes Lightning and unrelated components; adds strict
-architecture/shape checks and checkpoint conversion; uses one-channel input
-and output, rectangular images, and a configurable model width. No pretrained
-weights are distributed here. The upstream code license is reproduced below.
+in Git. The upstream code license is reproduced below.
 
 ## CompVis latent-diffusion — MIT License
 

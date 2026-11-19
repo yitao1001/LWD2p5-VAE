@@ -129,14 +129,24 @@ def _aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def summarize_metrics(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
-    """Aggregate samples and metadata groups without averaging batch means."""
+    """Aggregate samples and metadata groups without averaging batch means.
+
+    ``contrast_class`` and ``dip_class`` partition the samples. ``tags`` is a
+    ';'-separated list; a sample counts in every tag group it carries, so tag
+    groups overlap and their counts do not sum to the total.
+    """
     records = list(rows)
     result: dict[str, Any] = {"overall": _aggregate(records)}
-    for field in ("family", "contrast_class"):
+    for field in ("contrast_class", "dip_class"):
         groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for row in records:
             groups[str(row.get(field, "unknown"))].append(row)
         result[f"by_{field}"] = {name: _aggregate(group) for name, group in sorted(groups.items())}
+    tagged: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in records:
+        for tag in filter(None, str(row.get("tags", "")).split(";")):
+            tagged[tag].append(row)
+    result["by_tag"] = {name: _aggregate(group) for name, group in sorted(tagged.items())}
     return result
 
 

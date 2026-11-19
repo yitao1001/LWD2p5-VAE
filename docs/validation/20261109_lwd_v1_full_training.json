@@ -1,0 +1,65 @@
+{
+  "record": "First full fine-tuning run on lwd_v1 and independent evaluation",
+  "date": "2026-11-09",
+  "run": {
+    "output": "runs/csem_kl_f8_lwd_v1",
+    "config": "configs/vae_finetune_csem.json",
+    "settings": "SGD lr=1e-3 momentum=0.9 weight_decay=5e-4, constant lr, feature_weight=1, kl_weight=2.5e-6, float16 AMP, batch 4, 10 epochs (50000 steps)",
+    "device": "Tesla V100 cuda:3",
+    "seconds_per_epoch_including_validation": [813, 818, 820, 830, 830, 835, 832, 833, 828, 834],
+    "skipped_fp16_updates_per_epoch": [3, 0, 2, 2, 2, 3, 1, 3, 1, 2],
+    "dataset_manifest_sha256": "4132bdea4610b0adfb754c729f424ad06e0b9014cec011094ecefc72dee77f50",
+    "best_checkpoint_sha256": "4e6889661af0221693d1371726a6cdf7b037e74b1f06f23c3801cc7b68556fd2",
+    "note": "evaluations/*/metrics.json reports checkpoint_epoch=4: the checkpoint stores a 0-based epoch index; it is epoch 5 in summary.json and history.csv."
+  },
+  "validation_history_log10_rmse": {
+    "initial": 0.4504,
+    "per_epoch": [0.0209, 0.0202, 0.0204, 0.0266, 0.0165, 0.0174, 0.0194, 0.0188, 0.0166, 0.0227],
+    "best_epoch": 5,
+    "train_pixel_mse_normalized_per_epoch": [3.70e-4, 1.78e-4, 1.68e-4, 1.61e-4, 1.63e-4, 1.57e-4, 1.58e-4, 1.63e-4, 1.63e-4, 1.67e-4],
+    "train_kl_per_latent_per_epoch": [2.36, 1.60, 1.46, 1.36, 1.30, 1.24, 1.20, 1.16, 1.13, 1.10]
+  },
+  "best_vs_last_on_val": {
+    "method": "test_vae.py --splits val on best.pt (epoch 5) and last.pt (epoch 10); per-sample bias = mean(pred - true); debiased RMSE removes each sample's bias",
+    "best": {"rmse": 0.0165, "debiased_rmse": 0.0137, "bias_mean": -0.0015, "bias_std": 0.0091},
+    "last": {"rmse": 0.0227, "debiased_rmse": 0.0120, "bias_mean": -0.0169, "bias_std": 0.0092},
+    "interpretation": "Epoch-to-epoch validation RMSE swings are mostly a nearly uniform offset that drifts under constant-lr SGD. The last checkpoint has better structure (debiased RMSE 0.0120 < 0.0137) but a -0.017 log10 global offset, so selection by raw RMSE is partly selecting on offset noise."
+  },
+  "independent_evaluation": {
+    "command": ".venv/bin/python test_vae.py --dataset datasets/lwd_v1 --checkpoint runs/csem_kl_f8_lwd_v1/checkpoints/best.pt --device cuda:3 --output evaluations/csem_kl_f8_lwd_v1 --save-reconstructions",
+    "test": {
+      "count": 2000,
+      "rmse": 0.0168, "mae": 0.0115, "out_of_bounds_fraction": 0.0,
+      "by_contrast_class_rmse": {"none": 0.0123, "weak": 0.0126, "strong": 0.0188},
+      "by_family_rmse": {
+        "homogeneous": 0.0123, "layered": 0.0143, "fluid_contact": 0.0149, "faulted": 0.0153, "anticline": 0.0173,
+        "pinchout": 0.0180, "unconformity": 0.0183, "curved": 0.0194, "faulted_anticline": 0.0211
+      },
+      "bias_share_of_mse": 0.327,
+      "debiased_rmse": 0.0138,
+      "debiased_rmse_within_2_cells_of_interface": 0.0303,
+      "debiased_rmse_elsewhere": 0.0108,
+      "debiased_rmse_4_cell_border": 0.0197,
+      "debiased_rmse_interior": 0.0128,
+      "contrast_recovery_slope_median": {"strong": 0.987, "weak": 0.970, "weak_delta_0.05_0.10": 0.913, "weak_delta_0.10_0.15": 0.972, "weak_delta_0.15_0.25": 0.983},
+      "contrast_recovery_slope_p5": {"strong": 0.954, "weak": 0.854, "weak_delta_0.05_0.10": 0.719},
+      "weak_rmse_over_delta_median": 0.081,
+      "pixels_with_error_above_half_delta": {"weak_fraction": 0.00193, "strong_fraction": 0.000126,
+        "note": "Largest counts are weak samples with delta about 0.05 whose global offset (0.01-0.02) approaches delta/2; strong samples have isolated flipped pixels (up to about 30 per sample) at fault/pinchout tips and image edges."}
+    },
+    "ood_contrast": {
+      "count": 1000,
+      "delta_range_log10": [1.8, 2.4],
+      "rmse": 0.0598, "mae": 0.0450, "out_of_bounds_fraction": 0.0,
+      "rmse_by_delta": {"1.8-2.0": 0.0429, "2.0-2.2": 0.0577, "2.2-2.4": 0.0752},
+      "contrast_recovery_slope_median_by_delta": {"1.8-2.0": 0.967, "2.0-2.2": 0.956, "2.2-2.4": 0.940},
+      "bias_share_of_mse": 0.079,
+      "interpretation": "Beyond the training contrast range (max 1.5 decades) the decoder compresses contrast by 3-6% and one pinchout sample shows texture artifacts inside the wedge."
+    }
+  },
+  "slope_definition": "per-sample least-squares slope of (pred - mean pred) on (true - mean true); 1 means full contrast recovery",
+  "follow_up_options": [
+    "Decay the learning rate (e.g. cosine to about 1e-5) or keep an EMA of weights so the global offset settles; the structure is still improving at epoch 10.",
+    "Widen the training contrast range only if real formations exceed 1.5 decades between adjacent units."
+  ]
+}

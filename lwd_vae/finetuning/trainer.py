@@ -41,14 +41,44 @@ def make_loader(dataset, settings, *, training, epoch=0):
 
 
 def make_optimizer(model, settings):
+    """SGD（CSEM 脚本的设置）或 AdamW（解耦权重衰减，betas 取默认 0.9/0.999）。"""
     common = {"lr": settings["learning_rate"], "weight_decay": settings["weight_decay"]}
+    if settings["name"] == "adamw":
+        return torch.optim.AdamW(model.parameters(), **common)
     return torch.optim.SGD(model.parameters(), momentum=settings["momentum"], **common)
 
 
-def validate(model, loader, device, bounds):
-    """在原始 log10ρ 单位统计误差；用后验均值，不裁切预测。"""
+def validation_groups(dataset, settings):
+    """验证子集每张图的对比度类别（none/weak/moderate/high），顺序与验证 loader 一致。"""
+    maximum = settings["max_val_samples"]
+    count = len(dataset) if maximum is None else min(maximum, len(dataset))
+    return [str(dataset.metadata[i].get("contrast_class", "unknown")) for i in range(count)]
+
+
+def learning_rate_at(settings, step, total_steps):
+    """constant，或按全局步数从 learning_rate 余弦下降到 min_learning_rate。
+
+    续训时若增加总轮数，总步数随之改变，余弦曲线按新的总步数继续。
+    """
+    base = settings["learning_rate"]
+    if settings["schedule"] == "constant" or total_steps <= 1:
+        return base
+    floor = settings["min_learning_rate"]
+    progress = min(step / total_steps, 1.0)
+    return floor + 0.5 * (base - floor) * (1 + math.cos(math.pi * progress))
+
+
+def validate(model, loader, device, bounds, groups=None):
+    """在原始 log10ρ 单位统计误差；用后验均值，不裁切预测。
+
+    groups 给出 loader 顺序下每张图的类别时，另报各类的 RMSE（val_rmse_log10_<类别>）。
+    best.pt 仍按总体 val_rmse_log10 选择。
+    """
+    if groups is not None and len(groups) != len(loader.dataset):
+        raise ValueError("Validation group labels do not match the validation loader")
     model.eval()
-    count, squared, absolute, outside = 0, 0.0, 0.0, 0
+    count, squared, absolute, outside, index = 0, 0.0, 0.0, 0, 0
+    group_squared, group_count = {}, {}
     scale = (bounds[1] - bounds[0]) / 2
     with torch.no_grad():
         for target in loader:
@@ -61,13 +91,24 @@ def validate(model, loader, device, bounds):
             absolute += difference.abs().sum().item()
             count += difference.numel()
             outside += ((prediction < -1) | (prediction > 1)).sum().item()
-    return {"val_rmse_log10": math.sqrt(squared / count),
-            "val_mae_log10": absolute / count, "val_out_of_bounds_fraction": outside / count}
+            if groups is not None:
+                per_sample = difference.square().flatten(1).sum(1)
+                for value in per_sample.tolist():
+                    label = groups[index]
+                    group_squared[label] = group_squared.get(label, 0.0) + value
+                    group_count[label] = group_count.get(label, 0) + difference[0].numel()
+                    index += 1
+    metrics = {"val_rmse_log10": math.sqrt(squared / count),
+               "val_mae_log10": absolute / count, "val_out_of_bounds_fraction": outside / count}
+    for label in sorted(group_squared):
+        metrics[f"val_rmse_log10_{label}"] = math.sqrt(group_squared[label] / group_count[label])
+    return metrics
 
 
 def _write_history(path, rows):
+    fields = list(dict.fromkeys(key for row in rows for key in row))
     with path.open("w", newline="", encoding="utf8") as stream:
-        writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+        writer = csv.DictWriter(stream, fieldnames=fields, restval="")
         writer.writeheader()
         writer.writerows(rows)
 
@@ -86,7 +127,7 @@ def train(config=None, *, device_name="auto", resume=None, output=None, dataset=
             raise ValueError("Resume requires a new --output directory")
         model, saved = load_checkpoint(project_path(resume), device="cpu")
         if saved["format"] != CHECKPOINT_FORMAT:
-            raise ValueError("Only CSEM v3 checkpoints can resume here; old checkpoints remain readable for evaluation")
+            raise ValueError("Only lwd_vae_csem_v3 checkpoints can resume")
         c = deepcopy(saved["experiment_config"])
     elif config is not None:
         c = deepcopy(config)
@@ -199,8 +240,9 @@ def train(config=None, *, device_name="auto", resume=None, output=None, dataset=
             "device": str(device), "torch_version": str(torch.__version__), "python_version": platform.python_version(),
             "selection_metric": "minimum validation RMSE in raw log10rho, posterior mode, without clipping",
         })
+        groups = validation_groups(val_ds, settings)
         initial_metrics = saved["initial_validation"] if saved else validate(
-            model, make_loader(val_ds, settings, training=False), device, train_ds.log10_bounds)
+            model, make_loader(val_ds, settings, training=False), device, train_ds.log10_bounds, groups)
         write_json(output_path / "initial_validation.json", initial_metrics)
         if inherited_best:
             save_checkpoint(checkpoint_dir / "best.pt", inherited_best)
@@ -212,8 +254,13 @@ def train(config=None, *, device_name="auto", resume=None, output=None, dataset=
             before = time.perf_counter()
             model.train()
             sums, count, skipped = {}, 0, 0
-            for target in make_loader(train_ds, settings, training=True, epoch=epoch):
+            window, window_count, window_start = {}, 0, time.perf_counter()
+            loader = make_loader(train_ds, settings, training=True, epoch=epoch)
+            total_steps = settings["epochs"] * len(loader)
+            for step_in_epoch, target in enumerate(loader, 1):
                 target = target.to(device)
+                for group in optimizer.param_groups:
+                    group["lr"] = learning_rate_at(c["optimizer"], global_step, total_steps)
                 optimizer.zero_grad(set_to_none=True)
                 amp = torch.autocast("cuda", dtype=amp_dtype) if settings["precision"] != "float32" else nullcontext()
                 with amp:
@@ -231,10 +278,25 @@ def train(config=None, *, device_name="auto", resume=None, output=None, dataset=
                 scaler.update()
                 skipped += int(scaler.get_scale() < previous_scale)
                 for name, value in terms.items():
-                    sums[name] = sums.get(name, 0.0) + value.detach().item() * len(target)
+                    value = value.detach().item() * len(target)
+                    sums[name] = sums.get(name, 0.0) + value
+                    window[name] = window.get(name, 0.0) + value
                 count += len(target)
+                window_count += len(target)
                 global_step += 1
-            metrics = validate(model, make_loader(val_ds, settings, training=False), device, train_ds.log10_bounds)
+                every = settings["log_every_steps"]
+                if every and (step_in_epoch % every == 0 or step_in_epoch == len(loader)):
+                    elapsed = time.perf_counter() - window_start
+                    rate = every / elapsed if step_in_epoch % every == 0 else (step_in_epoch % every) / elapsed
+                    remaining = (len(loader) - step_in_epoch) / max(rate, 1e-12)
+                    print(f"  epoch {epoch+1} step {step_in_epoch}/{len(loader)} "
+                          f"loss={window['loss']/window_count:.4g} pixel={window['pixel']/window_count:.4g} "
+                          f"feature*w={window['weighted_feature']/window_count:.4g} kl*w={window['weighted_kl']/window_count:.4g} "
+                          f"kl/latent={window['kl_per_latent']/window_count:.3g} "
+                          f"{rate:.2f} step/s, epoch ETA {remaining/60:.1f} min", flush=True)
+                    window, window_count, window_start = {}, 0, time.perf_counter()
+            metrics = validate(model, make_loader(val_ds, settings, training=False), device,
+                               train_ds.log10_bounds, groups)
             score = metrics["val_rmse_log10"]
             is_best = score < best
             if is_best:
@@ -266,7 +328,10 @@ def train(config=None, *, device_name="auto", resume=None, output=None, dataset=
                 save_checkpoint(checkpoint_dir / "best.pt", state)
             save_checkpoint(checkpoint_dir / "last.pt", state)
             _write_history(log_dir / "history.csv", history)
-            print(f"epoch {epoch+1}/{settings['epochs']} loss={row['train_loss']:.6g} val_RMSE(log10rho)={score:.6g} best={best:.6g}", flush=True)
+            by_group = " ".join(f"{key[len('val_rmse_log10_'):]}={value:.4g}" for key, value in metrics.items()
+                                if key.startswith("val_rmse_log10_"))
+            print(f"epoch {epoch+1}/{settings['epochs']} loss={row['train_loss']:.6g} "
+                  f"val_RMSE(log10rho)={score:.6g} [{by_group}] best={best:.6g}", flush=True)
             if settings["patience"] and bad_epochs >= settings["patience"]:
                 stopped_early = True
                 break

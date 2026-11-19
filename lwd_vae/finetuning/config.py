@@ -99,17 +99,29 @@ def validate_config(config: dict) -> dict:
     if loss["feature"] != "none" and (not c["paths"]["alexnet_weights"] or loss["feature_weight"] <= 0):
         raise ValueError("Feature loss requires local alexnet_weights and a positive feature_weight")
     optimizer = c["optimizer"]
-    _keys(optimizer, ("name", "learning_rate", "momentum", "weight_decay"), "optimizer")
-    if optimizer["name"] != "sgd":
-        raise ValueError("This training route uses SGD; optimizer choice is an explicit LWD setting")
+    _keys(optimizer, ("name", "learning_rate", "momentum", "weight_decay", "schedule", "min_learning_rate"), "optimizer")
+    if optimizer["name"] not in ("sgd", "adamw"):
+        raise ValueError("optimizer.name must be sgd or adamw")
     _number(optimizer["learning_rate"], "optimizer.learning_rate", positive=True)
+    if optimizer["schedule"] == "constant":
+        if optimizer["min_learning_rate"] is not None:
+            raise ValueError("schedule=constant requires optimizer.min_learning_rate=null")
+    elif optimizer["schedule"] == "cosine":
+        _number(optimizer["min_learning_rate"], "optimizer.min_learning_rate")
+        if optimizer["min_learning_rate"] >= optimizer["learning_rate"]:
+            raise ValueError("optimizer.min_learning_rate must be below learning_rate")
+    else:
+        raise ValueError("optimizer.schedule must be constant or cosine")
     _number(optimizer["weight_decay"], "optimizer.weight_decay")
-    _number(optimizer["momentum"], "optimizer.momentum")
-    if optimizer["momentum"] >= 1:
-        raise ValueError("momentum must be < 1")
+    if optimizer["name"] == "sgd":
+        _number(optimizer["momentum"], "optimizer.momentum")
+        if optimizer["momentum"] >= 1:
+            raise ValueError("momentum must be < 1")
+    elif optimizer["momentum"] is not None:
+        raise ValueError("adamw uses default betas (0.9, 0.999); set optimizer.momentum to null")
     t = c["training"]
-    _keys(t, ("seed", "epochs", "batch_size", "workers", "cpu_threads", "precision", "grad_clip_norm", "patience", "min_delta", "max_train_samples", "max_val_samples"), "training")
-    for key in ("seed", "epochs", "batch_size", "workers", "cpu_threads", "patience"):
+    _keys(t, ("seed", "epochs", "batch_size", "workers", "cpu_threads", "precision", "grad_clip_norm", "patience", "min_delta", "max_train_samples", "max_val_samples", "log_every_steps"), "training")
+    for key in ("seed", "epochs", "batch_size", "workers", "cpu_threads", "patience", "log_every_steps"):
         _integer(t[key], f"training.{key}", 1 if key in ("epochs", "batch_size", "cpu_threads") else 0)
     for key in ("max_train_samples", "max_val_samples"):
         if t[key] is not None:

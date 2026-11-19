@@ -34,35 +34,30 @@ git pull --ff-only origin main
 
 如果服务器也修改了源码，先检查并保存这些修改；不要用强制重置覆盖。`--ff-only` 会在分支分叉时停止，便于先处理差异。
 
-## 3. 生成 v2.2 正式数据
-
-服务器已具备 NumPy 和 Matplotlib 的 Python 环境：
+## 3. 生成 lwd_v4 正式数据
 
 ```bash
-/home/wytao/miniconda3/envs/lwd2p5/bin/python generate_dataset.py --preview
+cd /home/wytao/projects/VAE_LWD2p5Inversion
+.venv/bin/python generate_dataset.py --preview
 ```
 
-默认读取 `configs/lwd_default.json`，写入 `datasets/lwd_global_v2_2/`：20,000 张训练、2,000 张验证、2,000 张测试和 1,000 张高物性对比度外推样本。分辨率为 48×120，物理窗口为 4×10 ft，单元为 1 inch。
+默认读取 `configs/lwd_default.json`，写入 `datasets/lwd_v4/`：40,000 张训练、2,000 张验证、2,000 张测试，以及对比度外推、倾角外推各 1,000 张。网格为 1 inch、128×128、10.67×10.67 ft 正方形全局窗口，数组约 3 GB，单进程生成约 8 分钟。输出目录已存在时，生成器会拒绝覆盖；另一批数据请用新目录并同步修改训练配置中的数据路径。数据生成只需要 CPU。
 
-输出目录已存在时，生成器会拒绝覆盖。生成另一批数据应使用新的目录，例如 `--output datasets/lwd_global_v2_2_run02`，并同步修改对应训练配置中的数据路径。数据生成只需要 CPU，不会启动 VAE 训练。
-
-九类配比、几何参数和外推集规则见 [数据集 v2.2 说明](DATASET_GLOBAL_V2_2_CN.md)。每批数据的 `manifest.json` 保存实际类别数量、生成器版本和源码校验值，可用于核对代码与数据是否对应。
+各组件参数和外推集规则见 [数据集 lwd_v4 说明](DATASET_V4_CN.md)。每批数据的 `manifest.json` 保存各标签的实际数量、生成器版本和源码校验值。
 
 ## 4. 关于测试数据
 
-测试用的检查数据同样不随 Git 传输。新检出目录可执行 `python generate_dataset.py --smoke --preview` 生成当前版本检查数据。完整历史兼容性测试还使用旧版检查数据，需保留原有数据或使用 `references/dataset_v1/` 与 `references/dataset_global_v2/` 中的归档生成器重建；仅检出源码后直接运行全部测试，并不代表这些历史数据已经存在。
+测试用的检查数据不随 Git 传输。自动测试在临时目录里自己生成所需数据；需要手工检查时执行 `python generate_dataset.py --smoke --preview`，写入 `datasets/lwd_v4_smoke/`。
 
-## 5. CSEM 路线重构后的训练位置（2026-11-08）
+## 5. 训练
 
-当前入口为 `train_vae.py`，唯一正式配置为 `configs/vae_finetune_csem.json`。旧双路线配置和 AI 基线入口已归档；请不要继续使用本目录里早期实验遗留的根目录 `sdvae_model_finetune.py` 启动正式训练。
-
-服务器独立 Python 环境为项目内 `.venv`，PyTorch 2.6.0+cu124 / torchvision 0.21.0+cu124；已确认能识别 V100。它独立于原有 `lwd2p5` conda 环境。
+入口为 `train_vae.py`，唯一正式配置为 `configs/vae_finetune_csem.json`。服务器独立 Python 环境为项目内 `.venv`（PyTorch 2.6.0+cu124 / torchvision 0.21.0+cu124），独立于原有 `lwd2p5` conda 环境。
 
 ```bash
 cd /home/wytao/projects/VAE_LWD2p5Inversion
 .venv/bin/python prepare_pretrained.py --check-only
 .venv/bin/python train_vae.py --check-only --device cuda:0
-.venv/bin/python train_vae.py --device cuda:0 --output runs/csem_kl_f8_lwd_v1
+.venv/bin/python train_vae.py --device cuda:0 --output runs/csem_kl_f8_lwd_v4
 ```
 
-模型权重不走 Git。首次可通过 `prepare_pretrained.py` 下载，或从本地复制已校验文件至 `weights/vae/` 和 `weights/perceptual/`，再执行校验。服务器独有的旧脚本与工具倾角/网格映射文件继续保留，未由此次主线重构覆盖。
+模型权重不走 Git。首次可通过 `prepare_pretrained.py` 下载，或从本地复制已校验文件至 `weights/vae/` 和 `weights/perceptual/`，再执行校验。

@@ -37,13 +37,18 @@ class MetricsTests(unittest.TestCase):
         prediction = np.broadcast_to(np.array([0, 0, 3])[:, None, None, None], truth.shape)
         rows = reconstruction_metrics(truth, prediction, [-1, 3])
         for i, row in enumerate(rows):
-            row.update(family="layered" if i < 2 else "faulted", contrast_class="weak" if i < 2 else "strong")
+            row.update(tags="planar;trend" if i < 2 else "fault;trend", contrast_class="weak" if i < 2 else "high",
+                       dip_class="gentle")
         summary = summarize_metrics(rows)
         self.assertAlmostEqual(summary["overall"]["rmse_log10"], math.sqrt(3))
         self.assertAlmostEqual(summary["overall"]["mae_log10"], 1)
-        self.assertEqual(summary["by_family"]["layered"]["count"], 2)
-        self.assertEqual(summary["by_family"]["faulted"]["rmse_log10"], 3)
+        self.assertEqual(summary["by_tag"]["planar"]["count"], 2)
+        self.assertEqual(summary["by_tag"]["fault"]["rmse_log10"], 3)
+        # Tags overlap: every sample carries "trend", so that group equals the whole split.
+        self.assertEqual(summary["by_tag"]["trend"]["count"], 3)
+        self.assertAlmostEqual(summary["by_tag"]["trend"]["rmse_log10"], math.sqrt(3))
         self.assertEqual(summary["by_contrast_class"]["weak"]["mae_log10"], 0)
+        self.assertEqual(summary["by_dip_class"]["gentle"]["count"], 3)
 
     def test_decoder_out_of_bounds_not_clipped(self):
         raw = unrestricted_denormalize(np.array([[[[2.0, -2.0]]]]), [-1, 3])

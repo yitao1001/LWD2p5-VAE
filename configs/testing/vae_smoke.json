@@ -6,11 +6,11 @@
     "status": "Synthetic/random initialization; no scientific validation",
     "assumptions": [
       "Reduced 32-channel network; no pretrained or perceptual weights; two short CPU epochs.",
-      "Dataset v2.2 uses a globally aligned y-z frame and a horizontal reference sequence with local anticlines and inclined fault offsets; isolated block/lens bodies are excluded. Tool inclination belongs to the forward model."
+      "Dataset lwd_v4: global y-z frame, 128x128 cells of 1 inch; formation dip is geology, tool inclination belongs to the forward model."
     ]
   },
   "paths": {
-    "dataset": "datasets/smoke_global_v2_2",
+    "dataset": "datasets/lwd_v4_smoke",
     "output": "runs/smoke_csem_pipeline",
     "vae_weights": null,
     "alexnet_weights": null
@@ -49,7 +49,9 @@
     "name": "sgd",
     "learning_rate": 0.0002,
     "momentum": 0.9,
-    "weight_decay": 0.0005
+    "weight_decay": 0.0005,
+    "schedule": "constant",
+    "min_learning_rate": null
   },
   "training": {
     "seed": 20261104,
@@ -62,7 +64,8 @@
     "patience": 0,
     "min_delta": 0.0,
     "max_train_samples": 8,
-    "max_val_samples": 4
+    "max_val_samples": 4,
+    "log_every_steps": 0
   },
   "purpose": "smoke_test"
 }

@@ -1,0 +1,428 @@
+{
+ "record": "Full fine-tuning on lwd_v2 (beta pilots, cosine LR) and independent evaluation",
+ "date": "2026-11-10",
+ "run": {
+  "output": "runs/csem_kl_f8_lwd_v2",
+  "chain": "runs/lwd_v2_chain.sh (log runs/lwd_v2_chain.log)",
+  "settings": "SGD lr 1e-3 cosine to 1e-5, momentum 0.9, weight_decay 5e-4, feature_weight 1, kl_weight 5e-6, float16 AMP, batch 4, 10 epochs (100000 steps)",
+  "device": "Tesla V100 cuda:3",
+  "started": "2026-11-09 20:58",
+  "finished": "2026-11-10 00:15",
+  "seconds_per_epoch_including_validation": [
+   1174,
+   1175,
+   1172,
+   1176,
+   1169,
+   1173,
+   1172,
+   1174,
+   1175,
+   1179
+  ],
+  "skipped_fp16_updates_per_epoch": [
+   4,
+   4,
+   4,
+   5,
+   4,
+   2,
+   5,
+   3,
+   4,
+   3
+  ],
+  "dataset": "datasets/lwd_v2 (generator 2.0.0, schema 3, median_thickness_ft [0.4, 6])",
+  "dataset_manifest_sha256": "280e46105b5d75d9e1efa527c1a04b5a402c6f8a9974ab06bd556a4dd2edd42e",
+  "best_checkpoint_sha256": "e405c8d9fa511e78d9c1d916dc58e544fe934c8bc87565d8aa459577ba65bda6",
+  "note": "metrics.json checkpoint_epoch=5 is 0-based; it is epoch 6 in summary.json and history.csv."
+ },
+ "beta_pilots": {
+  "source": "runs/pilot_20261109/selection.json",
+  "rule": "largest kl_weight whose pilot best val RMSE is within 10% of the best pilot",
+  "pilot_best_val_rmse": {
+   "2.5e-6": 0.0629,
+   "5e-6": 0.0617
+  },
+  "chosen": 5e-06
+ },
+ "validation_history_log10_rmse": {
+  "initial": 0.575,
+  "per_epoch": [
+   0.0503,
+   0.0448,
+   0.0435,
+   0.0442,
+   0.0403,
+   0.0388,
+   0.0409,
+   0.0388,
+   0.0401,
+   0.0393
+  ],
+  "best_epoch": 6,
+  "per_epoch_contrast_none": [
+   0.0331,
+   0.0102,
+   0.0258,
+   0.0352,
+   0.0288,
+   0.0235,
+   0.0357,
+   0.0283,
+   0.0348,
+   0.0319
+  ],
+  "learning_rate_end_of_epoch": [
+   0.000976,
+   0.000905,
+   0.000796,
+   0.000658,
+   0.000505,
+   0.000352,
+   0.000214,
+   0.000105,
+   3.42e-05,
+   1e-05
+  ],
+  "train_pixel_mse_normalized_per_epoch": [
+   0.00108,
+   0.000658,
+   0.000584,
+   0.000538,
+   0.00051,
+   0.000486,
+   0.000471,
+   0.000459,
+   0.000452,
+   0.00045
+  ],
+  "train_kl_per_latent_per_epoch": [
+   2.85,
+   2.34,
+   2.23,
+   2.16,
+   2.12,
+   2.09,
+   2.07,
+   2.06,
+   2.06,
+   2.06
+  ],
+  "interpretation": "Cosine decay narrowed the late-epoch swing (epochs 6-10: 0.0388-0.0409, last 0.0393) compared with lwd_v1 (0.0165-0.0227). The near-constant 'none' class (thick beds) still moves 0.010-0.036 between epochs, i.e. a global offset that the decay does not remove."
+ },
+ "independent_evaluation": {
+  "command": ".venv/bin/python test_vae.py --dataset datasets/lwd_v2 --checkpoint runs/csem_kl_f8_lwd_v2/checkpoints/best.pt --device cuda:3 --output evaluations/csem_kl_f8_lwd_v2 --save-reconstructions",
+  "definitions": "per-sample bias = mean(pred - true); debiased RMSE removes each sample's bias; interface cells = cells with an adjacent |delta| > 0.05 dilated by one cell; slope = per-sample least-squares slope of centred pred on centred true (samples with variance > 1e-4)",
+  "test": {
+   "count": 2000,
+   "rmse": 0.0389,
+   "mae": 0.0172,
+   "out_of_bounds_fraction": 6.103515625e-08,
+   "by_contrast_class_rmse": {
+    "high": 0.0538,
+    "moderate": 0.0295,
+    "none": 0.0231,
+    "weak": 0.0158
+   },
+   "by_dip_class_rmse": {
+    "gentle": 0.0367,
+    "moderate": 0.0445
+   },
+   "by_tag_rmse": {
+    "thick_bed": 0.0231,
+    "planar": 0.0335,
+    "pinchout": 0.0343,
+    "gradational": 0.0377,
+    "fluid_contact": 0.0388,
+    "trend": 0.0426,
+    "undulation": 0.0446,
+    "fault": 0.045,
+    "erosion": 0.0452,
+    "concretion": 0.0454
+   },
+   "debiased_rmse": 0.03716,
+   "bias_share_of_mse": 0.0865,
+   "bias_mean": -0.00581,
+   "bias_std": 0.00985,
+   "abs_bias_p90": 0.01859,
+   "interface_cell_fraction": 0.25252,
+   "debiased_rmse_within_2_cells_of_interface": 0.0706,
+   "debiased_rmse_elsewhere": 0.01281,
+   "debiased_rmse_4_cell_border": 0.05588,
+   "debiased_rmse_interior": 0.03378,
+   "pixels_abs_error_above_0.1": 0.00963,
+   "pixels_abs_error_above_0.3": 0.00169,
+   "contrast_recovery_slope_median": {
+    "high": 1.0,
+    "moderate": 0.998,
+    "none": 0.89,
+    "weak": 0.956
+   },
+   "contrast_recovery_slope_p5": {
+    "high": 0.973,
+    "moderate": 0.962,
+    "none": 0.83,
+    "weak": 0.833
+   },
+   "thick_bed": {
+    "count": 44,
+    "abs_bias_mean": 0.02,
+    "debiased_rmse": 0.0057
+   },
+   "worst_samples": [
+    {
+     "id": "test:00001534",
+     "tags": "undulation;erosion;trend",
+     "rmse": 0.2538,
+     "bias": -0.0282,
+     "max_abs_err": 1.948
+    },
+    {
+     "id": "test:00001074",
+     "tags": "undulation;trend",
+     "rmse": 0.2139,
+     "bias": -0.0171,
+     "max_abs_err": 2.321
+    },
+    {
+     "id": "test:00001982",
+     "tags": "undulation;gradational;trend",
+     "rmse": 0.2115,
+     "bias": -0.0156,
+     "max_abs_err": 2.052
+    },
+    {
+     "id": "test:00001602",
+     "tags": "undulation;fault;gradational;trend",
+     "rmse": 0.2053,
+     "bias": -0.0088,
+     "max_abs_err": 2.52
+    },
+    {
+     "id": "test:00000098",
+     "tags": "undulation;erosion;trend",
+     "rmse": 0.2053,
+     "bias": -0.0044,
+     "max_abs_err": 2.149
+    }
+   ]
+  },
+  "ood_contrast": {
+   "count": 1000,
+   "rmse": 0.0731,
+   "mae": 0.0281,
+   "out_of_bounds_fraction": 1.77001953125e-06,
+   "by_contrast_class_rmse": {
+    "ood": 0.0731
+   },
+   "by_dip_class_rmse": {
+    "gentle": 0.0697,
+    "moderate": 0.0817
+   },
+   "by_tag_rmse": {
+    "planar": 0.0597,
+    "gradational": 0.0682,
+    "fluid_contact": 0.0702,
+    "concretion": 0.0709,
+    "undulation": 0.076,
+    "erosion": 0.0774,
+    "trend": 0.0792,
+    "pinchout": 0.0814,
+    "fault": 0.0929
+   },
+   "debiased_rmse": 0.07206,
+   "bias_share_of_mse": 0.02719,
+   "bias_mean": -0.00497,
+   "bias_std": 0.01098,
+   "abs_bias_p90": 0.01899,
+   "interface_cell_fraction": 0.29981,
+   "debiased_rmse_within_2_cells_of_interface": 0.12705,
+   "debiased_rmse_elsewhere": 0.02249,
+   "debiased_rmse_4_cell_border": 0.10837,
+   "debiased_rmse_interior": 0.0655,
+   "pixels_abs_error_above_0.1": 0.03252,
+   "pixels_abs_error_above_0.3": 0.0049,
+   "contrast_recovery_slope_median": {
+    "ood": 0.996
+   },
+   "contrast_recovery_slope_p5": {
+    "ood": 0.967
+   },
+   "rmse_by_span": {
+    "2.5-2.67": {
+     "count": 348,
+     "rmse": 0.0696,
+     "slope_median": 0.9977
+    },
+    "2.67-2.84": {
+     "count": 352,
+     "rmse": 0.068,
+     "slope_median": 0.9965
+    },
+    "2.84-3.01": {
+     "count": 300,
+     "rmse": 0.0821,
+     "slope_median": 0.9926
+    }
+   },
+   "worst_samples": [
+    {
+     "id": "ood_contrast:00000327",
+     "tags": "undulation;fault;trend",
+     "rmse": 0.2807,
+     "bias": 0.0083,
+     "max_abs_err": 3.034
+    },
+    {
+     "id": "ood_contrast:00000410",
+     "tags": "planar;trend",
+     "rmse": 0.2758,
+     "bias": 0.0032,
+     "max_abs_err": 2.661
+    },
+    {
+     "id": "ood_contrast:00000034",
+     "tags": "undulation;fault;trend",
+     "rmse": 0.2737,
+     "bias": 0.026,
+     "max_abs_err": 3.13
+    },
+    {
+     "id": "ood_contrast:00000996",
+     "tags": "fault;pinchout;trend",
+     "rmse": 0.2639,
+     "bias": 0.0071,
+     "max_abs_err": 2.953
+    },
+    {
+     "id": "ood_contrast:00000564",
+     "tags": "planar;gradational;trend",
+     "rmse": 0.2522,
+     "bias": 0.0358,
+     "max_abs_err": 2.653
+    }
+   ]
+  },
+  "ood_dip": {
+   "count": 1000,
+   "rmse": 0.0497,
+   "mae": 0.0209,
+   "out_of_bounds_fraction": 1.220703125e-07,
+   "by_contrast_class_rmse": {
+    "high": 0.0682,
+    "moderate": 0.0378,
+    "weak": 0.0172
+   },
+   "by_dip_class_rmse": {
+    "ood": 0.0497
+   },
+   "by_tag_rmse": {
+    "planar": 0.0474,
+    "pinchout": 0.0483,
+    "fault": 0.0512,
+    "undulation": 0.0516,
+    "gradational": 0.0517,
+    "trend": 0.0537,
+    "erosion": 0.0571,
+    "fluid_contact": 0.0572,
+    "concretion": 0.061
+   },
+   "debiased_rmse": 0.04804,
+   "bias_share_of_mse": 0.06694,
+   "bias_mean": -0.00701,
+   "bias_std": 0.01079,
+   "abs_bias_p90": 0.02068,
+   "interface_cell_fraction": 0.26078,
+   "debiased_rmse_within_2_cells_of_interface": 0.09064,
+   "debiased_rmse_elsewhere": 0.01496,
+   "debiased_rmse_4_cell_border": 0.06922,
+   "debiased_rmse_interior": 0.04434,
+   "pixels_abs_error_above_0.1": 0.01823,
+   "pixels_abs_error_above_0.3": 0.00317,
+   "contrast_recovery_slope_median": {
+    "high": 0.994,
+    "moderate": 0.997,
+    "weak": 0.969
+   },
+   "contrast_recovery_slope_p5": {
+    "high": 0.952,
+    "moderate": 0.957,
+    "weak": 0.783
+   },
+   "worst_samples": [
+    {
+     "id": "ood_dip:00000072",
+     "tags": "undulation;gradational;trend",
+     "rmse": 0.213,
+     "bias": -0.053,
+     "max_abs_err": 1.914
+    },
+    {
+     "id": "ood_dip:00000395",
+     "tags": "undulation;fault;concretion;gradational;trend",
+     "rmse": 0.2091,
+     "bias": -0.0291,
+     "max_abs_err": 2.507
+    },
+    {
+     "id": "ood_dip:00000266",
+     "tags": "undulation;pinchout;fluid_contact;trend",
+     "rmse": 0.2055,
+     "bias": -0.0425,
+     "max_abs_err": 2.157
+    },
+    {
+     "id": "ood_dip:00000153",
+     "tags": "planar;gradational;trend",
+     "rmse": 0.1856,
+     "bias": -0.0021,
+     "max_abs_err": 2.289
+    },
+    {
+     "id": "ood_dip:00000638",
+     "tags": "undulation;fault;gradational;trend",
+     "rmse": 0.1828,
+     "bias": -0.0269,
+     "max_abs_err": 2.039
+    }
+   ]
+  }
+ },
+ "error_vs_layer_thickness": {
+  "test_rmse_by_median_thickness_ft": {
+   "0.4-1 (n=680)": 0.058,
+   "1-2 (n=498)": 0.0254,
+   "2-4 (n=481)": 0.0224,
+   "4-6 (n=297)": 0.0224
+  },
+  "test_rmse_by_visible_layers": {
+   "0-3 (n=311)": 0.0227,
+   "4-7 (n=671)": 0.0217,
+   "8-13 (n=487)": 0.0282,
+   "14+ (n=531)": 0.0638
+  },
+  "test_rmse_by_thinnest_layer_ft": {
+   "<0.3 (n=424)": 0.0674,
+   "0.3-0.5 (n=302)": 0.037,
+   "0.5-1 (n=388)": 0.0257,
+   ">=1 (n=842)": 0.022
+  },
+  "ood_dip_rmse_by_median_thickness_ft": {
+   "0.4-1 (n=328)": 0.0763,
+   "1-2 (n=253)": 0.0344,
+   "2-4 (n=265)": 0.0266,
+   "4-6 (n=154)": 0.0219
+  },
+  "worst_samples": "All five worst test and ood_dip samples have median thickness 0.40-0.47 ft, 26-35 visible layers and 0.2 ft (2.4-cell) layers. The reconstructions keep every layer; the error is one-cell staircase shifts along steep thin high-contrast boundaries (pixel errors up to about 2 decades).",
+  "lwd_v3_exposure": "lwd_v3 test has no sample with median thickness < 1 ft (lwd_v2: 34%), 23% with >= 8 visible layers (lwd_v2: 51%) and 6% with a layer thinner than 0.5 ft (lwd_v2: 36%)."
+ },
+ "comparison_to_lwd_v1": "lwd_v1 test RMSE 0.0168 is not comparable: 0.5-inch cells, layers >= 0.8 ft (19 cells), 84% two-value images, contrast <= 1.5. On lwd_v2 samples with median thickness >= 1 ft the RMSE is 0.022-0.025.",
+ "conclusions": [
+  "Structure is learned: contrast recovery slope median >= 0.998 for moderate/high contrast in test, 0.996 in ood_contrast (span 2.5-3.0); bias is 8.6% of test MSE (lwd_v1: 33%).",
+  "Error concentrates on interfaces: debiased RMSE 0.071 within 2 cells of an interface vs 0.013 elsewhere; 25% of cells are interface cells.",
+  "Thin dense layering (median < 1 ft, layers down to 0.2 ft = 2.4 cells, below the 8-cell latent stride) drives most of the error; this supports lwd_v3.",
+  "Thick beds keep a 0.020 log10 mean absolute global offset (debiased RMSE 0.006).",
+  "Dip 15-25 deg (ood_dip) raises RMSE from 0.039 to 0.050, mostly through high-contrast and thin samples; contrast 2.5-3.0 (ood_contrast) gives 0.073."
+ ]
+}

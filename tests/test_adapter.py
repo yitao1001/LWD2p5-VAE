@@ -70,8 +70,10 @@ class AdapterTests(unittest.TestCase):
         (root / "train").mkdir(exist_ok=True)
         np.save(root / "train/log10rho.npy", data)
         manifest = {
-            "schema_version": 1,
+            "schema_version": 3,
+            "coordinate_frame": "global_aligned_yz",
             "config": {
+                "coordinate_frame": "global_aligned_yz",
                 "grid": {"nz": 2, "ny": 3, "y_bounds_ft": [-5, 5], "z_bounds_ft": [-2, 2]},
                 "resistivity": {"log10_bounds": [-1, 3]},
             },

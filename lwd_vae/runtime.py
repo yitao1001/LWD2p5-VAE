@@ -84,13 +84,11 @@ def data_contract(dataset, include_training_hashes=True):
 
 
 def same_data_contract(first, second):
-    """旧 checkpoint 未写 frame 字段，但原约定同样是全局 y/z；其余字段严格比较。"""
-    return ({**first, "coordinate_frame": first.get("coordinate_frame", "global_aligned_yz")}
-            == {**second, "coordinate_frame": second.get("coordinate_frame", "global_aligned_yz")})
+    return first == second
 
 
 def validate_data_contract(contract, dataset, require_manifest=False):
-    if contract.get("coordinate_frame", "global_aligned_yz") != dataset.coordinate_frame:
+    if contract.get("coordinate_frame") != dataset.coordinate_frame:
         raise ValueError("Dataset coordinate frame differs from checkpoint; no implicit rotation is allowed")
     if contract["grid"] != dataset.config["grid"] or list(contract["log10_bounds"]) != list(dataset.log10_bounds):
         raise ValueError("Dataset grid/physical coordinates or log10 normalization differ from checkpoint; no implicit resize/rescale is allowed")
@@ -127,19 +125,15 @@ def save_checkpoint(path, state):
 
 def load_checkpoint(path, device="cpu"):
     checkpoint = torch.load(path, map_location="cpu", weights_only=True)
-    if not isinstance(checkpoint, dict) or checkpoint.get("format") not in ("lwd_vae_training_v1", "lwd_vae_finetuning_v2", "lwd_vae_csem_v3"):
-        raise ValueError("Expected a training checkpoint from train_vae.py; use --pretrained for external weights")
+    if not isinstance(checkpoint, dict) or checkpoint.get("format") != "lwd_vae_csem_v3":
+        raise ValueError("Expected a lwd_vae_csem_v3 training checkpoint from train_vae.py; use --pretrained for external weights")
     for key in ("model_spec", "model_state", "data_contract", "epoch", "training_config"):
         if key not in checkpoint:
             raise ValueError(f"Missing checkpoint field: {key}")
-    if checkpoint["format"] in ("lwd_vae_finetuning_v2", "lwd_vae_csem_v3"):
-        from .finetuning.model import CompVisKLF8, upstream_provenance
-        if checkpoint.get("model_backend") != "compvis_original_core" or checkpoint.get("upstream_commit") != upstream_provenance()["commit"]:
-            raise ValueError("Checkpoint CompVis backend/version differs from the installed reference source")
-        model = CompVisKLF8(checkpoint["model_spec"])
-    else:
-        from .legacy.model import AutoencoderKL
-        model = AutoencoderKL(checkpoint["model_spec"])
+    from .finetuning.model import CompVisKLF8, upstream_provenance
+    if checkpoint.get("model_backend") != "compvis_original_core" or checkpoint.get("upstream_commit") != upstream_provenance()["commit"]:
+        raise ValueError("Checkpoint CompVis backend/version differs from the installed reference source")
+    model = CompVisKLF8(checkpoint["model_spec"])
     model.load_state_dict(checkpoint["model_state"], strict=True)
     model.to(select_device(str(device)))
     return model, checkpoint

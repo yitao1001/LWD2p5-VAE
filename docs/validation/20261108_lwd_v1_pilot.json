@@ -1,0 +1,317 @@
+{
+  "date": "2026-11-08",
+  "dataset": "datasets/lwd_v1",
+  "protocol": "first 4000 train / 500 val samples, 2 epochs (2000 steps), batch 4, float16 AMP, cuda:3 (V100); full KL-f8 + AlexNet; checkpoints deleted after screening, logs kept in runs/pilot_20261108",
+  "initial_val_rmse_log10": {
+    "val_rmse_log10": 0.4469559532610595,
+    "val_mae_log10": 0.3810176985125089,
+    "val_out_of_bounds_fraction": 9.27734375e-06,
+    "val_rmse_log10_none": 0.5258344369821094,
+    "val_rmse_log10_strong": 0.43496965259392795,
+    "val_rmse_log10_weak": 0.4557191345169362
+  },
+  "stages": {
+    "A": "optimizer/learning rate at gamma=1, beta=1e-5",
+    "B": "gamma=0.1 with stage-A choice",
+    "C": "beta 2.5e-6 and 1e-6 with stage-A choice"
+  },
+  "selection_rules": {
+    "A_B": "lowest val RMSE (log10rho) after 2 epochs, checking weak/strong/homogeneous groups",
+    "C": "largest beta whose val RMSE is within 10% of the best beta, to keep the latent space regular for latent-space inversion"
+  },
+  "runs": {
+    "A1_sgd_lr1e-4": {
+      "optimizer": {
+        "name": "sgd",
+        "learning_rate": 0.0001,
+        "momentum": 0.9,
+        "weight_decay": 0.0005
+      },
+      "feature_weight": 1.0,
+      "kl_weight": 1e-05,
+      "epochs": [
+        {
+          "epoch": 1,
+          "train_pixel": 0.0037009787754213905,
+          "train_kl_per_latent": 5.463922654032707,
+          "train_weighted_feature": 0.025845600057858974,
+          "train_weighted_kl": 0.08392584730498492,
+          "skipped_optimizer_updates": 4,
+          "val_rmse_log10": 0.048657603985833575,
+          "val_mae_log10": 0.03502245105109895,
+          "val_out_of_bounds_fraction": 8.138020833333333e-08,
+          "val_rmse_log10_none": 0.04141209988270598,
+          "val_rmse_log10_strong": 0.0550735983777479,
+          "val_rmse_log10_weak": 0.032500770833696485
+        },
+        {
+          "epoch": 2,
+          "train_pixel": 0.000689521185006015,
+          "train_kl_per_latent": 2.0761506230831146,
+          "train_weighted_feature": 0.015973790985066443,
+          "train_weighted_kl": 0.03188967178016901,
+          "skipped_optimizer_updates": 0,
+          "val_rmse_log10": 0.04468217878047014,
+          "val_mae_log10": 0.03205881737020127,
+          "val_out_of_bounds_fraction": 8.138020833333333e-08,
+          "val_rmse_log10_none": 0.0352967485201912,
+          "val_rmse_log10_strong": 0.049968147054388616,
+          "val_rmse_log10_weak": 0.032578653941394406
+        }
+      ]
+    },
+    "A2_sgd_lr1e-3": {
+      "optimizer": {
+        "name": "sgd",
+        "learning_rate": 0.001,
+        "momentum": 0.9,
+        "weight_decay": 0.0005
+      },
+      "feature_weight": 1.0,
+      "kl_weight": 1e-05,
+      "epochs": [
+        {
+          "epoch": 1,
+          "train_pixel": 0.0013310985036077908,
+          "train_kl_per_latent": 1.9407347719073296,
+          "train_weighted_feature": 0.01681218540202826,
+          "train_weighted_kl": 0.029809684534557165,
+          "skipped_optimizer_updates": 2,
+          "val_rmse_log10": 0.04015918060185079,
+          "val_mae_log10": 0.029627141459664812,
+          "val_out_of_bounds_fraction": 0.0,
+          "val_rmse_log10_none": 0.05361365022638886,
+          "val_rmse_log10_strong": 0.040609965940114554,
+          "val_rmse_log10_weak": 0.035895924002693584
+        },
+        {
+          "epoch": 2,
+          "train_pixel": 0.0005374398652347736,
+          "train_kl_per_latent": 1.1297733667492866,
+          "train_weighted_feature": 0.00942553082248196,
+          "train_weighted_kl": 0.017353317915461956,
+          "skipped_optimizer_updates": 0,
+          "val_rmse_log10": 0.035574898573949895,
+          "val_mae_log10": 0.02568915318948844,
+          "val_out_of_bounds_fraction": 0.0,
+          "val_rmse_log10_none": 0.05197527420834677,
+          "val_rmse_log10_strong": 0.0337376400893707,
+          "val_rmse_log10_weak": 0.03551497727331487
+        }
+      ]
+    },
+    "A3_adamw_lr1e-5": {
+      "optimizer": {
+        "name": "adamw",
+        "learning_rate": 1e-05,
+        "momentum": null,
+        "weight_decay": 0.0005
+      },
+      "feature_weight": 1.0,
+      "kl_weight": 1e-05,
+      "epochs": [
+        {
+          "epoch": 1,
+          "train_pixel": 0.0025687288331682793,
+          "train_kl_per_latent": 1.7392409188747406,
+          "train_weighted_feature": 0.014377058467362076,
+          "train_weighted_kl": 0.02671473912987858,
+          "skipped_optimizer_updates": 2,
+          "val_rmse_log10": 0.036688681297547196,
+          "val_mae_log10": 0.02786453071393195,
+          "val_out_of_bounds_fraction": 0.0,
+          "val_rmse_log10_none": 0.03875514940362359,
+          "val_rmse_log10_strong": 0.03779757849195211,
+          "val_rmse_log10_weak": 0.03372263956739529
+        },
+        {
+          "epoch": 2,
+          "train_pixel": 0.0005921901468827855,
+          "train_kl_per_latent": 0.784878796517849,
+          "train_weighted_feature": 0.007089446743251756,
+          "train_weighted_kl": 0.012055737673770637,
+          "skipped_optimizer_updates": 0,
+          "val_rmse_log10": 0.0361725955235901,
+          "val_mae_log10": 0.02836194829373274,
+          "val_out_of_bounds_fraction": 0.0,
+          "val_rmse_log10_none": 0.03572804647836126,
+          "val_rmse_log10_strong": 0.03552147020011285,
+          "val_rmse_log10_weak": 0.03762393635677597
+        }
+      ]
+    },
+    "A4_adamw_lr1e-4": {
+      "optimizer": {
+        "name": "adamw",
+        "learning_rate": 0.0001,
+        "momentum": null,
+        "weight_decay": 0.0005
+      },
+      "feature_weight": 1.0,
+      "kl_weight": 1e-05,
+      "epochs": [
+        {
+          "epoch": 1,
+          "train_pixel": 0.0022283896224107595,
+          "train_kl_per_latent": 1.0865657414346934,
+          "train_weighted_feature": 0.01983550161891617,
+          "train_weighted_kl": 0.01668964893813245,
+          "skipped_optimizer_updates": 2,
+          "val_rmse_log10": 0.08816549503645611,
+          "val_mae_log10": 0.07771614632329102,
+          "val_out_of_bounds_fraction": 0.0,
+          "val_rmse_log10_none": 0.07606043326630484,
+          "val_rmse_log10_strong": 0.09051805182591083,
+          "val_rmse_log10_weak": 0.085156549887131
+        },
+        {
+          "epoch": 2,
+          "train_pixel": 0.0014429383239621528,
+          "train_kl_per_latent": 0.6791575320512057,
+          "train_weighted_feature": 0.012990651215426623,
+          "train_weighted_kl": 0.010431859157979489,
+          "skipped_optimizer_updates": 0,
+          "val_rmse_log10": 0.04786853151033063,
+          "val_mae_log10": 0.03751986751509048,
+          "val_out_of_bounds_fraction": 0.0,
+          "val_rmse_log10_none": 0.023962661226431894,
+          "val_rmse_log10_strong": 0.05436920384199103,
+          "val_rmse_log10_weak": 0.03448672193802566
+        }
+      ]
+    },
+    "B1_gamma0.1": {
+      "optimizer": {
+        "name": "sgd",
+        "learning_rate": 0.001,
+        "momentum": 0.9,
+        "weight_decay": 0.0005
+      },
+      "feature_weight": 0.1,
+      "kl_weight": 1e-05,
+      "epochs": [
+        {
+          "epoch": 1,
+          "train_pixel": 0.0028853404314722864,
+          "train_kl_per_latent": 1.3312554731667041,
+          "train_weighted_feature": 0.005620676167076453,
+          "train_weighted_kl": 0.020448082975577563,
+          "skipped_optimizer_updates": 0,
+          "val_rmse_log10": 0.0867045299754172,
+          "val_mae_log10": 0.057959953604071954,
+          "val_out_of_bounds_fraction": 0.0,
+          "val_rmse_log10_none": 0.20684514472392065,
+          "val_rmse_log10_strong": 0.06949977330538547,
+          "val_rmse_log10_weak": 0.08038267963165753
+        },
+        {
+          "epoch": 2,
+          "train_pixel": 0.0015558062418713234,
+          "train_kl_per_latent": 0.6140706830918788,
+          "train_weighted_feature": 0.004189461508532986,
+          "train_weighted_kl": 0.009432125206803903,
+          "skipped_optimizer_updates": 0,
+          "val_rmse_log10": 0.0858511513596329,
+          "val_mae_log10": 0.05816823124816888,
+          "val_out_of_bounds_fraction": 0.0,
+          "val_rmse_log10_none": 0.21552411533218627,
+          "val_rmse_log10_strong": 0.06780509846215366,
+          "val_rmse_log10_weak": 0.0758723896399816
+        }
+      ]
+    },
+    "C1_beta2.5e-6": {
+      "optimizer": {
+        "name": "sgd",
+        "learning_rate": 0.001,
+        "momentum": 0.9,
+        "weight_decay": 0.0005
+      },
+      "feature_weight": 1.0,
+      "kl_weight": 2.5e-06,
+      "epochs": [
+        {
+          "epoch": 1,
+          "train_pixel": 0.001066060403616575,
+          "train_kl_per_latent": 3.953969774842262,
+          "train_weighted_feature": 0.010751770853996277,
+          "train_weighted_kl": 0.015183243118692189,
+          "skipped_optimizer_updates": 2,
+          "val_rmse_log10": 0.027522714824614804,
+          "val_mae_log10": 0.018151331245919132,
+          "val_out_of_bounds_fraction": 0.0,
+          "val_rmse_log10_none": 0.022062938407789317,
+          "val_rmse_log10_strong": 0.030856766418067075,
+          "val_rmse_log10_weak": 0.01973726766502708
+        },
+        {
+          "epoch": 2,
+          "train_pixel": 0.00022483345181535696,
+          "train_kl_per_latent": 2.1516011992692947,
+          "train_weighted_feature": 0.005344516650540755,
+          "train_weighted_kl": 0.008262148127425461,
+          "skipped_optimizer_updates": 0,
+          "val_rmse_log10": 0.02613571940889023,
+          "val_mae_log10": 0.018058297933891555,
+          "val_out_of_bounds_fraction": 0.0,
+          "val_rmse_log10_none": 0.025188492082814068,
+          "val_rmse_log10_strong": 0.02896258784554697,
+          "val_rmse_log10_weak": 0.01886633117423251
+        }
+      ]
+    },
+    "C2_beta1e-6": {
+      "optimizer": {
+        "name": "sgd",
+        "learning_rate": 0.001,
+        "momentum": 0.9,
+        "weight_decay": 0.0005
+      },
+      "feature_weight": 1.0,
+      "kl_weight": 1e-06,
+      "epochs": [
+        {
+          "epoch": 1,
+          "train_pixel": 0.0008748352386173792,
+          "train_kl_per_latent": 6.307859237909317,
+          "train_weighted_feature": 0.009025506396545098,
+          "train_weighted_kl": 0.009688871529418976,
+          "skipped_optimizer_updates": 3,
+          "val_rmse_log10": 0.024986832124186537,
+          "val_mae_log10": 0.015734801836327583,
+          "val_out_of_bounds_fraction": 0.0,
+          "val_rmse_log10_none": 0.013561274507769512,
+          "val_rmse_log10_strong": 0.02888766112589495,
+          "val_rmse_log10_weak": 0.01599696492703892
+        },
+        {
+          "epoch": 2,
+          "train_pixel": 0.0001526651622407371,
+          "train_kl_per_latent": 3.2592589285373688,
+          "train_weighted_feature": 0.004047624523751438,
+          "train_weighted_kl": 0.005006221573334187,
+          "skipped_optimizer_updates": 0,
+          "val_rmse_log10": 0.02452897393395777,
+          "val_mae_log10": 0.01737840708944456,
+          "val_out_of_bounds_fraction": 0.0,
+          "val_rmse_log10_none": 0.01895232249818745,
+          "val_rmse_log10_strong": 0.027337517674774443,
+          "val_rmse_log10_weak": 0.018277377521236267
+        }
+      ]
+    }
+  },
+  "chosen": {
+    "optimizer": "sgd",
+    "learning_rate": 0.001,
+    "momentum": 0.9,
+    "weight_decay": 0.0005,
+    "feature_weight": 1.0,
+    "kl_weight": 2.5e-06,
+    "precision": "float16"
+  },
+  "caveats": [
+    "2000-step screening favours fast early progress; the full 50000-step run may behave differently at constant learning rate",
+    "smaller beta gives lower pixel error but a less regular latent space; beta=1e-6 was 6% better in val RMSE than 2.5e-6"
+  ]
+}
