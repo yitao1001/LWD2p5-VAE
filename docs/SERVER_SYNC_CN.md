@@ -7,7 +7,7 @@
 | 本地 Mac | `/Users/yitao/Documents/2026LWD_Aramco/VAE_LWD2p5Inversion` | 修改代码和配置，提交后 push |
 | 服务器 `wytao@101.6.69.149` | `/home/wytao/projects/VAE_LWD2p5Inversion` | pull 代码，生成数据，执行训练 |
 
-Git 只同步源码、配置、测试与说明。`datasets/`、`runs/`、`evaluations/`、`reports/`、模型权重和本机环境不进入仓库。服务器首次同步前的旧源码单独备份；服务器独有文件与已有数据保留。
+Git 同步源码、配置、测试、说明、v4 报告生成脚本以及 `dataset_snapshots/lwd_v4/` 中的正式数据快照。每个分片最大 40 MiB，普通 Git 即可获取。解压后的数组、实验输出、模型权重和本机环境继续放在各自机器。
 
 ## 1. 本地修改后上传
 
@@ -35,6 +35,8 @@ git pull --ff-only origin main
 如果服务器也修改了源码，先检查并保存这些修改；不要用强制重置覆盖。`--ff-only` 会在分支分叉时停止，便于先处理差异。
 
 ## 3. 生成 lwd_v4 正式数据
+
+若需要源服务器上的同一批 46,000 个样本，在项目根目录运行 `python3 dataset_snapshots/lwd_v4/restore.py`。脚本逐一校验五个划分的数组和元数据、网格、预览图及清单，全部通过后生成 `datasets/lwd_v4/`。也可以选择从配置重新生成：
 
 ```bash
 cd /home/wytao/projects/VAE_LWD2p5Inversion

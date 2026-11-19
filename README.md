@@ -35,6 +35,7 @@ lwd_vae/
   vendor/compvis/             固定版本的原版网络计算代码
 weights/                     大权重，仅本机文件，不进 Git
 datasets/                    生成的数据，不进 Git
+dataset_snapshots/lwd_v4/    正式 v4 数据的无损分片、源文件 SHA-256 和恢复脚本
 runs/                        每次训练独立目录，不进 Git
 evaluations/                 独立评价结果，不进 Git
 tests/                       自带临时数据的自动测试
@@ -49,7 +50,7 @@ docs/                        中文设计文档和验证记录
 ```bash
 # 服务器在项目根目录使用 .venv/bin/python
 python prepare_pretrained.py --check-only
-python generate_dataset.py --preview            # → datasets/lwd_v4
+python dataset_snapshots/lwd_v4/restore.py     # 校验并恢复正式数据 → datasets/lwd_v4
 python train_vae.py --check-only --device cuda:0
 python train_vae.py --device cuda:0 --output runs/csem_kl_f8_lwd_v4
 
@@ -58,6 +59,8 @@ python test_vae.py --dataset datasets/lwd_v4 \
   --checkpoint runs/csem_kl_f8_lwd_v4/checkpoints/best.pt \
   --device cuda:0 --output evaluations/csem_kl_f8_lwd_v4 --save-reconstructions
 ```
+
+要在新机器从头生成同配置数据，可在空目录上运行 `python generate_dataset.py --preview`。要逐字节还原已归档的数据，请使用上面的恢复命令。恢复只需 Python 标准库，检出后请另预留约 3.5 GB 可用空间；恢复到自选目录可传 `--output`。
 
 只想检查流程、暂不使用大权重时：
 
